@@ -28,3 +28,15 @@ export type AppointmentRecord = {
   created_at?: string;
   updated_at?: string;
 };
+
+export type AvailabilityResponse = {
+  success: boolean;
+  disponivel: boolean;
+  message: string;
+  data: string;
+  horario: string;
+  conflito?: {
+    status: string;
+    servico?: string;
+  } | null;
+};

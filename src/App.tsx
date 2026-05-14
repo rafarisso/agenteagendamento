@@ -15,6 +15,7 @@ import {
   Network,
   PanelTop,
   Phone,
+  Send,
   ServerCog,
   ShieldCheck,
   Sparkles,
@@ -22,29 +23,29 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { MouseEvent, ReactNode } from "react";
-import { createAppointment, listAppointments } from "./lib/api";
+import { checkAvailability, createAppointment, listAppointments } from "./lib/api";
 import type { AppointmentForm, AppointmentRecord, AppointmentResponse } from "./types";
 
-const repoUrl = "https://github.com/SEU-USUARIO/SEU-REPOSITORIO";
+const repoUrl = "https://github.com/rafarisso/agenteagendamento";
 const deployUrl = "https://agente-agendamento.netlify.app";
 const openApiUrl = `${deployUrl}/openapi.yaml`;
 
 const services = [
   "Corte masculino",
-  "Hidratacao",
+  "Hidratação",
   "Escova",
-  "Coloracao",
-  "Diagnostico Foundry",
-  "Automacao com Agentes",
-  "Integracao Supabase",
-  "Mentoria tecnica",
+  "Coloração",
+  "Diagnóstico Foundry",
+  "Automação com Agentes",
+  "Integração Supabase",
+  "Mentoria técnica",
 ];
 
 const slots = [
   { hour: "09:00", label: "Primeira janela", load: 42 },
   { hour: "11:30", label: "Atendimento guiado", load: 55 },
-  { hour: "14:00", label: "Fluxo de demonstracao", load: 68 },
-  { hour: "16:30", label: "Revisao do case", load: 31 },
+  { hour: "14:00", label: "Fluxo de demonstração", load: 68 },
+  { hour: "16:30", label: "Revisão do case", load: 31 },
 ];
 
 const techBadges = [
@@ -58,8 +59,8 @@ const techBadges = [
 ];
 
 const howItWorks = [
-  "O usuario conversa com o agente",
-  "O agente coleta nome, WhatsApp, servico, data e horario",
+  "O usuário conversa com o agente",
+  "O agente coleta nome, WhatsApp, serviço, data e horário",
   "O agente chama uma API",
   "A Netlify Function valida e envia os dados",
   "O Supabase registra o agendamento",
@@ -81,10 +82,10 @@ const sampleAppointments: AppointmentRecord[] = [
     id: "demo-001",
     nome: "Juliana Alves",
     whatsapp: "11988887777",
-    servico: "Hidratacao",
+    servico: "Hidratação",
     data: "2026-05-15",
     horario: "15:00",
-    observacoes: "Caso de uso demonstrativo para salao de beleza.",
+    observacoes: "Caso de uso demonstrativo para salão de beleza.",
     status: "pendente",
     created_at: "2026-05-14T13:00:00.000Z",
   },
@@ -102,11 +103,12 @@ const sampleAppointments: AppointmentRecord[] = [
 ];
 
 const navItems = [
-  { label: "Inicio", path: "/", icon: Home },
+  { label: "Início", path: "/", icon: Home },
   { label: "Agendar", path: "/agendar", icon: CalendarDays },
+  { label: "Chat", path: "/chat", icon: MessageSquareText },
   { label: "Painel", path: "/painel", icon: PanelTop },
-  { label: "Documentacao", path: "/documentacao", icon: BookOpen },
-  { label: "Integracao Foundry", path: "/integracao-foundry", icon: Network },
+  { label: "Documentação", path: "/documentacao", icon: BookOpen },
+  { label: "Integração Foundry", path: "/integracao-foundry", icon: Network },
   { label: "Sobre o Projeto", path: "/sobre", icon: GraduationCap },
 ];
 
@@ -132,6 +134,8 @@ function App() {
     switch (path) {
       case "/agendar":
         return <SchedulePage />;
+      case "/chat":
+        return <ChatPage />;
       case "/painel":
         return <PanelPage />;
       case "/documentacao":
@@ -156,7 +160,7 @@ function App() {
           </span>
         </a>
 
-        <nav className="main-nav" aria-label="Navegacao principal">
+        <nav className="main-nav" aria-label="Navegação principal">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -178,7 +182,7 @@ function App() {
 
       <footer className="site-footer">
         <p>
-          Projeto desenvolvido por Rafael Risso, com inspiracao e orientacao do Professor Alexandre
+          Projeto desenvolvido por Rafael Risso, com inspiração e orientação do Professor Alexandre
           Becas Hernandes.
         </p>
         <strong>Curso MS FOUNDRY 2602 | SENAI | Maio de 2026</strong>
@@ -194,15 +198,15 @@ function HomePage({ navigate }: { navigate: (path: string) => void }) {
         <div className="hero-content">
           <span className="section-kicker">
             <Sparkles size={16} />
-            Case didatico institucional
+            Case didático institucional
           </span>
           <h1>SENAI Agenda IA</h1>
           <p className="hero-subtitle">
             Um agente de agendamento conectado ao Microsoft Foundry, Supabase e Netlify.
           </p>
           <p className="hero-copy">
-            Projeto didatico desenvolvido para demonstrar como um agente de IA pode ir alem da
-            conversa: ele coleta dados do usuario, aciona uma API serverless e registra informacoes
+            Projeto didático desenvolvido para demonstrar como um agente de IA pode ir além da
+            conversa: ele coleta dados do usuário, aciona uma API serverless e registra informações
             reais em um banco de dados.
           </p>
 
@@ -219,7 +223,7 @@ function HomePage({ navigate }: { navigate: (path: string) => void }) {
             </button>
             <button className="secondary-button" type="button" onClick={() => navigate("/documentacao")}>
               <BookOpen size={18} />
-              Ver documentacao
+              Ver documentação
             </button>
             <button className="ghost-button" type="button" onClick={() => navigate("/painel")}>
               <PanelTop size={18} />
@@ -252,7 +256,7 @@ function HomePage({ navigate }: { navigate: (path: string) => void }) {
             <span className="eyebrow">Como funciona</span>
             <h2 id="how-title">Da conversa ao registro real</h2>
           </div>
-          <span className="section-pill">Fluxo replicavel</span>
+          <span className="section-pill">Fluxo replicável</span>
         </div>
 
         <div className="steps-grid">
@@ -265,7 +269,7 @@ function HomePage({ navigate }: { navigate: (path: string) => void }) {
         </div>
 
         <blockquote className="impact-quote">
-          A diferenca aqui e simples: este agente nao apenas responde, ele executa uma acao real.
+          A diferença aqui é simples: este agente não apenas responde, ele executa uma ação real.
         </blockquote>
       </section>
     </>
@@ -314,9 +318,9 @@ function SchedulePage() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">Caso de uso demonstrativo</span>
-            <h1>Agendamento para salao de beleza</h1>
+            <h1>Agendamento para salão de beleza</h1>
             <p>
-              Este formulario simula os mesmos dados que o agente do Microsoft Foundry deve coletar
+              Este formulário simula os mesmos dados que o agente do Microsoft Foundry deve coletar
               antes de chamar a API.
             </p>
           </div>
@@ -368,7 +372,7 @@ function SchedulePage() {
           </div>
 
           <fieldset className="service-picker">
-            <legend>Servico</legend>
+            <legend>Serviço</legend>
             {services.map((service) => (
               <button
                 key={service}
@@ -395,7 +399,7 @@ function SchedulePage() {
               </div>
             </label>
             <label>
-              <span>Horario</span>
+              <span>Horário</span>
               <div className="input-wrap">
                 <Clock3 size={18} />
                 <select
@@ -413,7 +417,7 @@ function SchedulePage() {
           </div>
 
           <label>
-            <span>Observacoes</span>
+            <span>Observações</span>
             <textarea
               value={form.observacoes}
               onChange={(event) => updateField("observacoes", event.target.value)}
@@ -456,7 +460,7 @@ function SchedulePage() {
             >
               <span className="slot-time">{slot.hour}</span>
               <span className="slot-label">{slot.label}</span>
-              <span className="slot-meter" aria-label={`${slot.load}% de ocupacao`}>
+              <span className="slot-meter" aria-label={`${slot.load}% de ocupação`}>
                 <span style={{ width: `${slot.load}%` }} />
               </span>
             </button>
@@ -469,11 +473,210 @@ function SchedulePage() {
             <h3>Arquitetura segura</h3>
           </div>
           <ul>
-            <li>O frontend chama somente a rota publica da Netlify.</li>
+            <li>O frontend chama somente a rota pública da Netlify.</li>
             <li>A Function valida o payload antes de gravar.</li>
             <li>A service role, quando usada, fica apenas no servidor.</li>
           </ul>
           <strong>Slot selecionado: {selectedSlot.hour}</strong>
+        </div>
+      </aside>
+    </section>
+  );
+}
+
+type ChatMessage = {
+  role: "agent" | "user";
+  text: string;
+};
+
+function ChatPage() {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: "agent",
+      text:
+        "Olá. Eu sou o SENAI Agenda IA. Pergunte se uma data e um horário estão disponíveis ou envie os dados para fechar um agendamento.",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [draft, setDraft] = useState<AppointmentForm>(initialForm);
+  const [availability, setAvailability] = useState<{
+    data: string;
+    horario: string;
+    disponivel: boolean;
+  } | null>(null);
+  const [isWorking, setIsWorking] = useState(false);
+
+  async function handleChatSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = input.trim();
+    if (!text) {
+      return;
+    }
+
+    setInput("");
+    setIsWorking(true);
+    setMessages((current) => [...current, { role: "user", text }]);
+
+    try {
+      const extracted = extractChatData(text, draft);
+      const nextDraft = { ...draft, ...extracted };
+      setDraft(nextDraft);
+
+      const wantsBooking = /agend|fechar|confirm|marcar|reserv/i.test(text);
+      const requestedAvailability = Boolean(extracted.data && extracted.horario) || /dispon/i.test(text);
+
+      if (requestedAvailability && nextDraft.data && nextDraft.horario) {
+        const response = await checkAvailability(nextDraft.data, nextDraft.horario);
+        setAvailability({
+          data: response.data,
+          horario: response.horario,
+          disponivel: response.disponivel,
+        });
+
+        if (!response.disponivel) {
+          pushAgentMessage(response.message);
+          return;
+        }
+
+        if (!wantsBooking) {
+          pushAgentMessage(
+            `${response.message} Se quiser fechar, envie nome, WhatsApp e serviço ou diga "pode agendar".`,
+          );
+          return;
+        }
+      }
+
+      if (wantsBooking) {
+        const missing = missingChatFields(nextDraft);
+        if (missing.length > 0) {
+          pushAgentMessage(`Para concluir o agendamento, ainda preciso de: ${missing.join(", ")}.`);
+          return;
+        }
+
+        const response = await createAppointment(nextDraft);
+        pushAgentMessage(`${response.message}. Protocolo: ${response.id.slice(0, 8)}.`);
+        setDraft(initialForm);
+        setAvailability(null);
+        return;
+      }
+
+      pushAgentMessage(
+        "Entendi. Para consultar disponibilidade, informe uma data e um horário. Para concluir, informe também nome, WhatsApp e serviço.",
+      );
+    } catch (requestError) {
+      pushAgentMessage(
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível processar a mensagem agora.",
+      );
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  function pushAgentMessage(text: string) {
+    setMessages((current) => [...current, { role: "agent", text }]);
+  }
+
+  function useExample(text: string) {
+    setInput(text);
+  }
+
+  return (
+    <section className="page-grid">
+      <div className="chat-surface">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">Chat demonstrativo</span>
+            <h1>Agendamento pelo chat</h1>
+            <p>
+              Esta área simula o comportamento esperado do agente no Microsoft Foundry: consultar
+              disponibilidade e, quando o usuário confirmar, registrar o agendamento.
+            </p>
+          </div>
+          <MessageSquareText size={30} />
+        </div>
+
+        <div className="chat-window" aria-live="polite">
+          {messages.map((message, index) => (
+            <div className={`chat-message ${message.role}`} key={`${message.role}-${index}`}>
+              {message.text}
+            </div>
+          ))}
+          {isWorking ? (
+            <div className="chat-message agent">
+              <Loader2 className="spin" size={16} />
+              Consultando ferramentas...
+            </div>
+          ) : null}
+        </div>
+
+        <form className="chat-form" onSubmit={handleChatSubmit}>
+          <input
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="Ex.: 15/05/2026 às 14:00 está disponível?"
+          />
+          <button type="submit" disabled={isWorking}>
+            <Send size={18} />
+            Enviar
+          </button>
+        </form>
+      </div>
+
+      <aside className="agenda-surface">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">Estado do chat</span>
+            <h2>Dados coletados</h2>
+          </div>
+          <ShieldCheck size={26} />
+        </div>
+
+        <div className="key-list compact">
+          <div>
+            <code>nome</code>
+            <span>{draft.nome || "pendente"}</span>
+          </div>
+          <div>
+            <code>whatsapp</code>
+            <span>{draft.whatsapp || "pendente"}</span>
+          </div>
+          <div>
+            <code>serviço</code>
+            <span>{draft.servico || "pendente"}</span>
+          </div>
+          <div>
+            <code>data</code>
+            <span>{draft.data || "pendente"}</span>
+          </div>
+          <div>
+            <code>horário</code>
+            <span>{draft.horario || "pendente"}</span>
+          </div>
+        </div>
+
+        {availability ? (
+          <p className={availability.disponivel ? "feedback success" : "feedback error"}>
+            {availability.data} às {availability.horario}:{" "}
+            {availability.disponivel ? "disponível" : "indisponível"}
+          </p>
+        ) : null}
+
+        <div className="example-list">
+          <button type="button" onClick={() => useExample("15/05/2026 às 14:00 está disponível?")}>
+            Consultar disponibilidade
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              useExample(
+                "Pode agendar Rafael Risso, WhatsApp 11910950968, corte masculino, 15/05/2026 às 14:00",
+              )
+            }
+          >
+            Fechar agendamento
+          </button>
         </div>
       </aside>
     </section>
@@ -500,7 +703,7 @@ function PanelPage() {
           setNotice(
             requestError instanceof Error
               ? requestError.message
-              : "Nao foi possivel carregar os agendamentos reais.",
+              : "Não foi possível carregar os agendamentos reais.",
           );
         }
       } finally {
@@ -523,21 +726,26 @@ function PanelPage() {
           <span className="eyebrow">Painel</span>
           <h1>Agendamentos registrados</h1>
           <p>
-            Area de leitura para demonstrar que a conversa com o agente pode gerar registros reais
+            Área de leitura para demonstrar que a conversa com o agente pode gerar registros reais
             no Supabase.
           </p>
         </div>
         <PanelTop size={32} />
       </div>
 
+      <p className="feedback warning">
+        Esta página está acessível no site por se tratar de um projeto pedagógico. Em um projeto
+        real, somente o responsável teria acesso e ela poderia ser protegida por senha.
+      </p>
+
       {notice ? (
         <p className="feedback warning">
-          {notice} Exibindo registros de demonstracao para a apresentacao.
+          {notice} Exibindo registros de demonstração para a apresentação.
         </p>
       ) : null}
 
       <div className="metric-grid">
-        <MetricCard label="Registros visiveis" value={appointments.length.toString()} />
+        <MetricCard label="Registros visíveis" value={appointments.length.toString()} />
         <MetricCard label="Status pendente" value={appointments.filter((item) => item.status === "pendente").length.toString()} />
         <MetricCard label="Origem" value={isLoading ? "Carregando" : notice ? "Demo" : "Supabase"} />
       </div>
@@ -557,7 +765,7 @@ function PanelPage() {
               <div>
                 <strong>{appointment.servico}</strong>
                 <span>
-                  {appointment.data} as {appointment.horario}
+                  {appointment.data} às {appointment.horario}
                 </span>
               </div>
               <span className={`status-badge ${appointment.status}`}>{appointment.status}</span>
@@ -573,22 +781,22 @@ function DocumentationPage() {
   return (
     <article className="doc-page">
       <PageIntro
-        kicker="Documentacao"
-        title="Documentacao do Projeto"
+        kicker="Documentação"
+        title="Documentação do Projeto"
         subtitle="Material de apoio para professores e alunos replicarem o SENAI Agenda IA em outras turmas."
       />
 
-      <DocSection title="A. Visao geral">
+      <DocSection title="A. Visão geral">
         <p>
-          O SENAI Agenda IA e um case didatico de agente de IA com acao real. Ele conecta uma
+          O SENAI Agenda IA é um case didático de agente de IA com ação real. Ele conecta uma
           interface web, um agente criado no Microsoft Foundry, uma API serverless e uma base de
           dados Supabase.
         </p>
       </DocSection>
 
-      <DocSection title="B. Objetivo pedagogico">
+      <DocSection title="B. Objetivo pedagógico">
         <p>
-          O objetivo e mostrar o ciclo completo: prompt do agente, interface web, API, banco de
+          O objetivo é mostrar o ciclo completo: prompt do agente, interface web, API, banco de
           dados e deploy. O aluno visualiza como uma conversa estruturada se transforma em registro
           persistente.
         </p>
@@ -615,7 +823,7 @@ function DocumentationPage() {
       <DocSection title="D. Arquitetura do sistema">
         <FlowList
           items={[
-            "Usuario",
+            "Usuário",
             "Interface Web",
             "Agente Microsoft Foundry",
             "API Netlify Function",
@@ -633,7 +841,7 @@ function DocumentationPage() {
             "Configurar prompt do agente",
             "Criar projeto React com Vite",
             "Criar tabela no Supabase",
-            "Configurar variaveis de ambiente",
+            "Configurar variáveis de ambiente",
             "Criar Netlify Function",
             "Criar arquivo OpenAPI",
             "Publicar na Netlify",
@@ -643,8 +851,8 @@ function DocumentationPage() {
         />
       </DocSection>
 
-      <DocSection title="F. Configuracao do Supabase">
-        <p>Estrutura didatica da tabela <code>agendamentos</code>:</p>
+      <DocSection title="F. Configuração do Supabase">
+        <p>Estrutura didática da tabela <code>agendamentos</code>:</p>
         <div className="schema-grid">
           {[
             "id",
@@ -677,28 +885,45 @@ function DocumentationPage() {
         />
       </DocSection>
 
-      <DocSection title="G. Configuracao da Netlify">
+      <DocSection title="G. Configuração da Netlify">
         <p>
-          Configure as variaveis no painel da Netlify. A service role deve ser usada apenas nas
+          Configure as variáveis no painel da Netlify. A service role deve ser usada apenas nas
           Netlify Functions e nunca no frontend.
         </p>
         <KeyValueList
           items={[
             ["VITE_SUPABASE_URL", "Opcional para variantes que leem dados no frontend."],
-            ["VITE_SUPABASE_ANON_KEY", "Opcional; nunca substitui validacao server-side."],
+            ["VITE_SUPABASE_ANON_KEY", "Opcional; nunca substitui validação server-side."],
             ["SUPABASE_URL", "URL do projeto Supabase usada pelas Functions."],
-            ["SUPABASE_SERVICE_ROLE_KEY", "Chave server-side para painel e operacoes administrativas."],
+            ["SUPABASE_SERVICE_ROLE_KEY", "Chave server-side para painel e operações administrativas."],
           ]}
         />
       </DocSection>
 
-      <DocSection title="H. Endpoint da API">
+      <DocSection title="H. Endpoints da API">
+        <p><code>POST /api/consultar-disponibilidade</code></p>
+        <CodeBlock
+          code={`{
+  "data": "2026-05-15",
+  "horario": "14:00"
+}`}
+        />
+        <CodeBlock
+          code={`{
+  "success": true,
+  "disponivel": true,
+  "message": "Horário disponível para agendamento.",
+  "data": "2026-05-15",
+  "horario": "14:00",
+  "conflito": null
+}`}
+        />
         <p><code>POST /api/criar-agendamento</code></p>
         <CodeBlock
           code={`{
   "nome": "Juliana Alves",
   "whatsapp": "11988887777",
-  "servico": "Hidratacao",
+  "servico": "Hidratação",
   "data": "2026-05-15",
   "horario": "15:00",
   "observacoes": "Cliente prefere atendimento com profissional feminina"
@@ -715,27 +940,30 @@ function DocumentationPage() {
 
       <DocSection title="I. Como usar com Microsoft Foundry">
         <p>
-          O agente deve coletar nome, WhatsApp, servico, data e horario. Depois, ele chama:
+          O agente deve coletar nome, WhatsApp, serviço, data e horário. Antes de agendar, ele
+          consulta disponibilidade e, depois da confirmação do usuário, chama:
         </p>
         <CodeBlock code={`POST ${deployUrl}/api/criar-agendamento`} />
       </DocSection>
 
       <DocSection title="J. Prompt base do agente">
         <CodeBlock
-          code={`Voce e o assistente SENAI Agenda IA.
-Seu papel e coletar dados de agendamento de forma clara, educada e objetiva.
-Colete obrigatoriamente: nome, WhatsApp, servico, data e horario.
-Nao peca chaves de API ao usuario.
-Nao mencione service role.
-Quando todos os dados estiverem completos, chame a ferramenta criarAgendamento.
-Se algum dado estiver faltando, faca apenas a pergunta necessaria.
+          code={`Você é o assistente SENAI Agenda IA.
+Seu papel é coletar dados de agendamento de forma clara, educada e objetiva.
+Colete obrigatoriamente: nome, WhatsApp, serviço, data e horário.
+Antes de agendar, chame consultarDisponibilidade.
+Se o horário estiver disponível e o usuário confirmar, chame criarAgendamento.
+Não peça chaves de API ao usuário.
+Não mencione service role.
+Quando todos os dados estiverem completos, chame a ferramenta correta.
+Se algum dado estiver faltando, faça apenas a pergunta necessária.
 Ao concluir, informe que o agendamento ficou com status pendente.`}
         />
       </DocSection>
 
-      <DocSection title="K. Repositorio">
+      <DocSection title="K. Repositório">
         <a className="primary-link" href={repoUrl} target="_blank" rel="noreferrer">
-          Ver repositorio no GitHub
+          Ver repositório no GitHub
           <ExternalLink size={16} />
         </a>
       </DocSection>
@@ -747,16 +975,17 @@ function FoundryPage() {
   return (
     <article className="doc-page">
       <PageIntro
-        kicker="Integracao"
-        title="Integracao com Microsoft Foundry"
+        kicker="Integração"
+        title="Integração com Microsoft Foundry"
         subtitle="Este projeto foi preparado para receber dados de um agente criado no Microsoft Foundry."
       />
 
-      <DocSection title="Fluxo da integracao">
+      <DocSection title="Fluxo da integração">
         <FlowList
           items={[
             "Microsoft Foundry Agent",
             "Ferramenta ou chamada HTTP",
+            "Endpoint /api/consultar-disponibilidade",
             "Endpoint /api/criar-agendamento",
             "Netlify Function",
             "Supabase",
@@ -766,21 +995,40 @@ function FoundryPage() {
 
       <DocSection title="Arquivo OpenAPI">
         <p>
-          O arquivo <code>openapi.yaml</code> descreve a API para o Foundry. A versao publicada esta
-          disponivel em:
+          O arquivo <code>openapi.yaml</code> descreve a API para o Foundry. A versão publicada está
+          disponível em:
         </p>
         <a className="primary-link" href={openApiUrl} target="_blank" rel="noreferrer">
           {openApiUrl}
           <ExternalLink size={16} />
         </a>
         <CodeBlock
-          code={`operationId: criarAgendamento
+          code={`operationId: consultarDisponibilidade
+endpoint: POST /api/consultar-disponibilidade
+descrição: verifica se uma data e um horário estão livres
+
+operationId: criarAgendamento
 endpoint: POST /api/criar-agendamento
-descricao: cria uma nova solicitacao de agendamento no Supabase`}
+descrição: cria uma nova solicitação de agendamento no Supabase`}
         />
       </DocSection>
 
-      <DocSection title="Teste manual da API">
+      <DocSection title="Teste manual da disponibilidade">
+        <CodeBlock
+          code={`fetch('/api/consultar-disponibilidade', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    data: '2026-05-15',
+    horario: '14:00'
+  })
+})`}
+        />
+      </DocSection>
+
+      <DocSection title="Teste manual do agendamento">
         <CodeBlock
           code={`fetch('/api/criar-agendamento', {
   method: 'POST',
@@ -808,17 +1056,17 @@ function AboutPage() {
       <PageIntro
         kicker="Sobre"
         title="Sobre o SENAI Agenda IA"
-        subtitle="Projeto didatico criado por Rafael Risso durante o curso MS FOUNDRY 2602."
+        subtitle="Projeto didático criado por Rafael Risso durante o curso MS FOUNDRY 2602."
       />
 
       <DocSection title="Origem do projeto">
         <p>
-          O SENAI Agenda IA e um projeto didatico criado por Rafael Risso durante o curso MS FOUNDRY
-          2602, com inspiracao e orientacao do Professor Alexandre Becas Hernandes.
+          O SENAI Agenda IA é um projeto didático criado por Rafael Risso durante o curso MS FOUNDRY
+          2602, com inspiração e orientação do Professor Alexandre Becas Hernandes.
         </p>
         <p>
-          A proposta e demonstrar, de maneira pratica, como agentes de IA podem ser conectados a
-          ferramentas reais, permitindo que uma conversa gere uma acao concreta, como registrar um
+          A proposta é demonstrar, de maneira prática, como agentes de IA podem ser conectados a
+          ferramentas reais, permitindo que uma conversa gere uma ação concreta, como registrar um
           agendamento em banco de dados.
         </p>
       </DocSection>
@@ -826,17 +1074,17 @@ function AboutPage() {
       <DocSection title="Por que este projeto importa?">
         <p>
           Muitos exemplos de IA ficam limitados a respostas em texto. Este projeto mostra uma
-          aplicacao mais proxima do mercado: um agente que entende a solicitacao, organiza os dados,
+          aplicação mais próxima do mercado: um agente que entende a solicitação, organiza os dados,
           chama uma API e registra tudo em uma base real.
         </p>
       </DocSection>
 
-      <DocSection title="Aplicacoes possiveis">
+      <DocSection title="Aplicações possíveis">
         <div className="application-grid">
           {[
-            "Saloes de beleza",
+            "Salões de beleza",
             "Barbearias",
-            "Clinicas",
+            "Clínicas",
             "Escolas",
             "Oficinas",
             "Consultorias",
@@ -951,6 +1199,59 @@ function CodeBlock({ code }: { code: string }) {
       <code>{code}</code>
     </pre>
   );
+}
+
+function extractChatData(text: string, current: AppointmentForm): Partial<AppointmentForm> {
+  const lower = text.toLowerCase();
+  const date = parseDateFromText(text);
+  const time = text.match(/\b([01]?\d|2[0-3])[:h]([0-5]\d)\b/);
+  const phone = text.replace(/\D/g, "").match(/\d{10,13}/)?.[0];
+  const normalizedText = normalizeSearchText(text);
+  const service = services.find((item) => normalizedText.includes(normalizeSearchText(item)));
+  const named = text.match(/(?:nome\s*(?:é|:)?|sou|agendar\s+)([A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][\wÀ-ÿ]+(?:\s+[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][\wÀ-ÿ]+){0,3})/);
+
+  return {
+    nome: named?.[1] ?? current.nome,
+    whatsapp: phone ?? current.whatsapp,
+    servico: service ?? current.servico,
+    data: date ?? current.data,
+    horario: time ? `${time[1].padStart(2, "0")}:${time[2]}` : current.horario,
+    observacoes: current.observacoes,
+  };
+}
+
+function parseDateFromText(text: string) {
+  const isoDate = text.match(/\b(20\d{2}-\d{2}-\d{2})\b/)?.[1];
+  if (isoDate) {
+    return isoDate;
+  }
+
+  const brazilianDate = text.match(/\b(\d{1,2})\/(\d{1,2})\/(20\d{2})\b/);
+  if (!brazilianDate) {
+    return null;
+  }
+
+  const [, day, month, year] = brazilianDate;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function missingChatFields(form: AppointmentForm) {
+  return [
+    ["nome", form.nome],
+    ["WhatsApp", form.whatsapp],
+    ["serviço", form.servico],
+    ["data", form.data],
+    ["horário", form.horario],
+  ]
+    .filter(([, value]) => !value)
+    .map(([label]) => label);
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function handleNav(

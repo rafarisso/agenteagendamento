@@ -29,15 +29,29 @@ type AppointmentInsert = {
   metadata: Record<string, unknown>;
 };
 
-const allowedServices = new Set([
-  "Corte masculino",
-  "Hidratacao",
-  "Escova",
-  "Coloracao",
-  "Diagnostico Foundry",
-  "Automacao com Agentes",
-  "Integracao Supabase",
-  "Mentoria tecnica",
+const serviceAliases = new Map([
+  ["Corte masculino", "Corte masculino"],
+  ["corte masculino", "Corte masculino"],
+  ["Hidratação", "Hidratacao"],
+  ["Hidratacao", "Hidratacao"],
+  ["hidratacao", "Hidratacao"],
+  ["Escova", "Escova"],
+  ["escova", "Escova"],
+  ["Coloração", "Coloracao"],
+  ["Coloracao", "Coloracao"],
+  ["coloracao", "Coloracao"],
+  ["Diagnóstico Foundry", "Diagnostico Foundry"],
+  ["Diagnostico Foundry", "Diagnostico Foundry"],
+  ["diagnostico foundry", "Diagnostico Foundry"],
+  ["Automação com Agentes", "Automacao com Agentes"],
+  ["Automacao com Agentes", "Automacao com Agentes"],
+  ["automacao com agentes", "Automacao com Agentes"],
+  ["Integração Supabase", "Integracao Supabase"],
+  ["Integracao Supabase", "Integracao Supabase"],
+  ["integracao supabase", "Integracao Supabase"],
+  ["Mentoria técnica", "Mentoria tecnica"],
+  ["Mentoria tecnica", "Mentoria tecnica"],
+  ["mentoria tecnica", "Mentoria tecnica"],
 ]);
 
 const corsHeaders = {
@@ -55,18 +69,18 @@ export default async (request: Request) => {
   }
 
   if (request.method !== "POST") {
-    return json({ error: "Metodo nao permitido." }, 405);
+    return json({ error: "Método não permitido." }, 405);
   }
 
   const supabaseUrl = readEnv("SUPABASE_URL");
   const supabaseKey =
+    readEnv("SUPABASE_SERVICE_ROLE_KEY") ??
     readEnv("SUPABASE_PUBLISHABLE_KEY") ??
-    readEnv("SUPABASE_ANON_KEY") ??
-    readEnv("SUPABASE_SERVICE_ROLE_KEY");
+    readEnv("SUPABASE_ANON_KEY");
 
   if (!supabaseUrl || !supabaseKey) {
     return json(
-      { error: "Configure SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY na Netlify." },
+      { error: "Configure SUPABASE_URL e uma chave Supabase server-side na Netlify." },
       500,
     );
   }
@@ -75,7 +89,7 @@ export default async (request: Request) => {
   try {
     payload = (await request.json()) as AppointmentPayload;
   } catch {
-    return json({ error: "Envie um corpo JSON valido." }, 400);
+    return json({ error: "Envie um corpo JSON válido." }, 400);
   }
 
   const parsed = parsePayload(payload);
@@ -95,10 +109,10 @@ export default async (request: Request) => {
   if (error) {
     console.error("Erro ao criar agendamento no Supabase", error);
     if (error.code === "23505") {
-      return json({ error: "Este horario ja esta reservado." }, 409);
+      return json({ error: "Este horário já está reservado." }, 409);
     }
 
-    return json({ error: "Nao foi possivel salvar o agendamento." }, 502);
+    return json({ error: "Não foi possível salvar o agendamento." }, 502);
   }
 
   return json(
@@ -111,7 +125,7 @@ export default async (request: Request) => {
         id: parsed.value.id,
         nome: parsed.value.nome,
         whatsapp: parsed.value.whatsapp,
-        servico: parsed.value.servico,
+        servico: displayServiceName(parsed.value.servico),
         data: parsed.value.data,
         horario: parsed.value.horario,
         observacoes: parsed.value.observacoes,
@@ -150,23 +164,25 @@ function parsePayload(payload: AppointmentPayload):
   }
 
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { ok: false, error: "Informe um email valido." };
+    return { ok: false, error: "Informe um email válido." };
   }
 
   if (!whatsapp || whatsapp.length < 8) {
-    return { ok: false, error: "Informe um WhatsApp valido." };
+    return { ok: false, error: "Informe um WhatsApp válido." };
   }
 
-  if (!servico || !allowedServices.has(servico)) {
-    return { ok: false, error: "Escolha um servico valido." };
+  const normalizedService = serviceAliases.get(servico) ?? serviceAliases.get(normalizeLookupKey(servico));
+
+  if (!normalizedService) {
+    return { ok: false, error: "Escolha um serviço válido." };
   }
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || Number.isNaN(Date.parse(`${data}T00:00:00`))) {
-    return { ok: false, error: "Informe uma data valida no formato AAAA-MM-DD." };
+    return { ok: false, error: "Informe uma data válida no formato AAAA-MM-DD." };
   }
 
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(horario)) {
-    return { ok: false, error: "Informe um horario valido no formato HH:MM." };
+    return { ok: false, error: "Informe um horário válido no formato HH:MM." };
   }
 
   return {
@@ -177,7 +193,7 @@ function parsePayload(payload: AppointmentPayload):
       email: email || null,
       telefone: whatsapp,
       whatsapp,
-      servico,
+      servico: normalizedService,
       data,
       horario,
       mensagem: observacoes || null,
@@ -190,6 +206,26 @@ function parsePayload(payload: AppointmentPayload):
 
 function cleanString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeLookupKey(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function displayServiceName(value: string) {
+  const displayNames = new Map([
+    ["Hidratacao", "Hidratação"],
+    ["Coloracao", "Coloração"],
+    ["Diagnostico Foundry", "Diagnóstico Foundry"],
+    ["Automacao com Agentes", "Automação com Agentes"],
+    ["Integracao Supabase", "Integração Supabase"],
+    ["Mentoria tecnica", "Mentoria técnica"],
+  ]);
+
+  return displayNames.get(value) ?? value;
 }
 
 function normalizeMetadata(value: unknown): Record<string, unknown> {

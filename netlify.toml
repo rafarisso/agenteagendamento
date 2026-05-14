@@ -25,6 +25,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/consultar-disponibilidade"
+  to = "/.netlify/functions/consultar-disponibilidade"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

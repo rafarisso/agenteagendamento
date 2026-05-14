@@ -187,6 +187,7 @@ main {
 .hero-content h1,
 .page-intro h1,
 .form-surface h1,
+.chat-surface h1,
 .content-section h1 {
   margin: 0;
   color: #ffffff;
@@ -211,6 +212,7 @@ main {
 .section-heading p,
 .doc-section p,
 .form-surface p,
+.chat-surface p,
 .content-section p {
   color: var(--muted);
   line-height: 1.7;
@@ -444,6 +446,7 @@ main {
 .metric-card,
 .doc-section,
 .form-surface,
+.chat-surface,
 .agenda-surface,
 .table-card {
   border: 1px solid var(--line);
@@ -494,6 +497,7 @@ main {
 }
 
 .form-surface,
+.chat-surface,
 .agenda-surface,
 .doc-section,
 .table-card {
@@ -637,6 +641,91 @@ textarea::placeholder {
   border: 1px solid rgba(245, 158, 11, 0.34);
   background: rgba(245, 158, 11, 0.12);
   color: #fde68a;
+}
+
+.chat-surface {
+  min-width: 0;
+}
+
+.chat-window {
+  display: grid;
+  gap: 12px;
+  min-height: 360px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(3, 9, 18, 0.44);
+}
+
+.chat-message {
+  width: fit-content;
+  max-width: min(82%, 680px);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  line-height: 1.55;
+  color: #e7eef8;
+}
+
+.chat-message.agent {
+  justify-self: start;
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.chat-message.user {
+  justify-self: end;
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.chat-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.chat-form input {
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.chat-form button,
+.example-list button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: rgba(125, 211, 252, 0.12);
+  color: #eff6ff;
+  font-weight: 900;
+}
+
+.chat-form button {
+  padding: 0 16px;
+}
+
+.chat-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.key-list.compact div {
+  grid-template-columns: minmax(90px, 0.35fr) minmax(0, 1fr);
+}
+
+.example-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .slot-list {
@@ -1020,10 +1109,19 @@ textarea::placeholder {
   }
 
   .form-surface,
+  .chat-surface,
   .agenda-surface,
   .doc-section,
   .table-card {
     padding: 18px;
+  }
+
+  .chat-form {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-message {
+    max-width: 100%;
   }
 
   .site-footer p {

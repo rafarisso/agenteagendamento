@@ -16,7 +16,7 @@ export default async (request: Request) => {
   }
 
   if (request.method !== "GET") {
-    return json({ error: "Metodo nao permitido." }, 405);
+    return json({ error: "Método não permitido." }, 405);
   }
 
   const supabaseUrl = readEnv("SUPABASE_URL");
@@ -47,7 +47,7 @@ export default async (request: Request) => {
 
   if (error) {
     console.error("Erro ao listar agendamentos no Supabase", error);
-    return json({ error: "Nao foi possivel carregar os agendamentos." }, 502);
+    return json({ error: "Não foi possível carregar os agendamentos." }, 502);
   }
 
   return json(
@@ -57,7 +57,7 @@ export default async (request: Request) => {
         id: String(item.id),
         nome: String(item.nome),
         whatsapp: String(item.whatsapp ?? item.telefone ?? ""),
-        servico: String(item.servico),
+        servico: displayServiceName(String(item.servico)),
         data: String(item.data),
         horario: String(item.horario).slice(0, 5),
         observacoes: (item.observacoes ?? item.mensagem ?? null) as string | null,
@@ -79,4 +79,17 @@ function json(payload: unknown, status: number) {
     status,
     headers: corsHeaders,
   });
+}
+
+function displayServiceName(value: string) {
+  const displayNames = new Map([
+    ["Hidratacao", "Hidratação"],
+    ["Coloracao", "Coloração"],
+    ["Diagnostico Foundry", "Diagnóstico Foundry"],
+    ["Automacao com Agentes", "Automação com Agentes"],
+    ["Integracao Supabase", "Integração Supabase"],
+    ["Mentoria tecnica", "Mentoria técnica"],
+  ]);
+
+  return displayNames.get(value) ?? value;
 }
