@@ -25,9 +25,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { MouseEvent, ReactNode } from "react";
 import {
   createAppointment,
-  getDayAvailability,
   listAppointments,
-  suggestAvailability,
+  sendFoundryChat,
 } from "./lib/api";
 import type {
   AppointmentForm,
@@ -415,9 +414,10 @@ function HomePage({ navigate }: { navigate: (path: string) => void }) {
         <FlowList
           items={[
             "Usuário",
-            "Chat do agente",
-            "Consulta de disponibilidade",
-            "API Netlify Function",
+            "Chat do site",
+            "Function /api/foundry-chat",
+            "Agente Microsoft Foundry",
+            "Ferramenta OpenAPI",
             "Supabase",
             "Painel didático",
           ]}
@@ -432,11 +432,14 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
     {
       role: "agent",
       text:
-        "Olá. Eu sou o SENAI Agenda IA. Diga o serviço, a data e o período desejado. Exemplo: Quero marcar uma hidratação sexta à tarde.",
+        "Olá. Eu sou o agente real do SENAI Agenda IA no Microsoft Foundry. Diga o serviço, a data e o período desejado. Exemplo: Quero cortar o cabelo sexta à tarde.",
     },
   ]);
   const [input, setInput] = useState("");
-  const [draft, setDraft] = useState<ChatDraft>(initialChatDraft);
+  const [previousResponseId, setPreviousResponseId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [lastOutputTypes, setLastOutputTypes] = useState<string[]>([]);
+  const [lastToolCalls, setLastToolCalls] = useState<string[]>([]);
   const [isWorking, setIsWorking] = useState(false);
 
   async function handleChatSubmit(event: FormEvent<HTMLFormElement>) {
@@ -451,98 +454,17 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
     setMessages((current) => [...current, { role: "user", text }]);
 
     try {
-      const extracted = extractChatData(text, draft);
-      let nextDraft: ChatDraft = {
-        ...draft,
-        ...extracted,
-        suggestedSlots: extracted.suggestedSlots ?? draft.suggestedSlots,
-      };
-
-      const selectedByOrdinal = parseOrdinalSlot(text, draft.suggestedSlots);
-      if (selectedByOrdinal) {
-        nextDraft = { ...nextDraft, horario: selectedByOrdinal };
-      }
-
-      setDraft(nextDraft);
-
-      if (!nextDraft.servico) {
-        pushAgentMessage(
-          "Qual serviço deseja agendar? Neste case usamos salão de beleza apenas como cenário demonstrativo. Exemplos: corte, hidratação, escova ou coloração.",
-        );
-        return;
-      }
-
-      if (!nextDraft.data) {
-        pushAgentMessage(
-          `Entendi: ${nextDraft.servico}. Para qual data? Você pode dizer algo como sexta, amanhã ou 15/05/2026.`,
-        );
-        return;
-      }
-
-      if (!nextDraft.horario) {
-        if (!nextDraft.periodo) {
-          pushAgentMessage(
-            `Entendi: ${nextDraft.servico} em ${formatDate(nextDraft.data)}. Prefere manhã ou tarde?`,
-          );
-          return;
-        }
-
-        const availability = await suggestAvailability(nextDraft.data, nextDraft.servico, nextDraft.periodo);
-        nextDraft = { ...nextDraft, suggestedSlots: availability.horariosDisponiveis };
-        setDraft(nextDraft);
-
-        if (availability.horariosDisponiveis.length === 0) {
-          pushAgentMessage(
-            `${availability.mensagem} Escolha outra data ou outro período para eu consultar novamente.`,
-          );
-          return;
-        }
-
-        pushAgentMessage(
-          `Para ${formatDate(nextDraft.data)}, encontrei horários às ${formatSlotList(
-            availability.horariosDisponiveis,
-          )}. Qual prefere?`,
-        );
-        return;
-      }
-
-      const selectedAvailability = await getDayAvailability(nextDraft.data);
-      const selectedSlot = selectedAvailability.slots.find((slot) => slot.horario === nextDraft.horario);
-      if (!selectedSlot?.disponivel) {
-        const available = selectedAvailability.slots
-          .filter((slot) => slot.disponivel)
-          .map((slot) => slot.horario);
-        setDraft({ ...nextDraft, horario: "", suggestedSlots: available });
-        pushAgentMessage(
-          available.length > 0
-            ? `Esse horário não está disponível. Para essa data, posso sugerir ${formatSlotList(available)}.`
-            : "Essa data não tem horários disponíveis. Escolha outra data para eu consultar.",
-        );
-        return;
-      }
-
-      const missing = missingChatFields(nextDraft);
-      if (missing.length > 0) {
-        pushAgentMessage(`Perfeito. Para registrar no Supabase, ainda preciso de: ${missing.join(", ")}.`);
-        return;
-      }
-
-      const response = await createAppointment({
-        ...nextDraft,
-        origem: "chat",
-        observacoes:
-          nextDraft.observacoes ||
-          `Agendamento criado pelo chat didático. Período solicitado: ${nextDraft.periodo || "não informado"}.`,
-      });
-      pushAgentMessage(
-        `${response.message}. O registro já está disponível no painel didático conectado ao Supabase.`,
-      );
-      setDraft(initialChatDraft);
+      const response = await sendFoundryChat(text, previousResponseId, conversationId);
+      setPreviousResponseId(response.responseId);
+      setConversationId(response.conversationId);
+      setLastOutputTypes(response.outputTypes);
+      setLastToolCalls(response.toolCalls.map((call) => call.name || call.type));
+      pushAgentMessage(response.reply);
     } catch (requestError) {
       pushAgentMessage(
         requestError instanceof Error
           ? requestError.message
-          : "Não foi possível processar a mensagem agora.",
+          : "Não foi possível conversar com o agente Foundry agora.",
       );
     } finally {
       setIsWorking(false);
@@ -578,7 +500,7 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
           {isWorking ? (
             <div className="chat-message agent">
               <Loader2 className="spin" size={16} />
-              Consultando ferramentas...
+              Conversando com o agente Foundry...
             </div>
           ) : null}
         </div>
@@ -587,7 +509,7 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
           <input
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="Ex.: Quero marcar uma hidratação sexta à tarde"
+            placeholder="Ex.: Quero cortar o cabelo sexta à tarde"
           />
           <button type="submit" disabled={isWorking}>
             <Send size={18} />
@@ -600,7 +522,7 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
         <div className="section-heading">
           <div>
             <span className="eyebrow">Leitura didática</span>
-            <h2>Estado da conversa</h2>
+            <h2>Integração real</h2>
           </div>
           <ShieldCheck size={26} />
         </div>
@@ -608,31 +530,32 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
         <KeyValueList
           compact
           items={[
-            ["serviço", draft.servico || "pendente"],
-            ["data", draft.data || "pendente"],
-            ["período", draft.periodo || "pendente"],
-            ["horário", draft.horario || "pendente"],
-            ["nome", draft.nome || "pendente"],
-            ["whatsapp", draft.whatsapp || "pendente"],
+            ["origem", "Microsoft Foundry"],
+            ["backend", "Netlify Function"],
+            ["endpoint", "/api/foundry-chat"],
+            ["contexto", previousResponseId ? shortIdentifier(previousResponseId) : "novo"],
+            ["saída", lastOutputTypes.join(", ") || "aguardando"],
+            ["ferramentas", lastToolCalls.join(", ") || "aguardando"],
           ]}
         />
 
         <div className="didactic-note">
           <strong>O que está acontecendo</strong>
           <p>
-            O chat coleta dados, consulta a Netlify Function, recebe horários livres e só cria o
-            agendamento depois de ter confirmação e dados obrigatórios.
+            O site envia sua mensagem para uma Netlify Function. A Function chama o agente real no
+            Microsoft Foundry. Quando o agente usa OpenAPI, ele aciona as Functions de agenda e o
+            registro aparece no Supabase.
           </p>
         </div>
 
         <div className="example-list">
-          <button type="button" onClick={() => useExample("Quero marcar uma hidratação sexta à tarde.")}>
+          <button type="button" onClick={() => useExample("Quero cortar o cabelo sexta à tarde.")}>
             Exemplo: intenção
           </button>
           <button type="button" onClick={() => useExample("Prefiro 15h30.")}>
             Exemplo: escolha
           </button>
-          <button type="button" onClick={() => useExample("Pode ser Juliana Alves, WhatsApp 11988887777.")}>
+          <button type="button" onClick={() => useExample("Pode ser Rafael Risso, WhatsApp 11910950968.")}>
             Exemplo: dados finais
           </button>
           <button type="button" onClick={() => navigate("/painel")}>
@@ -1064,6 +987,7 @@ Ferramenta: criarAgendamento`}
             ["GET /api/disponibilidade", "Lista os horários livres e ocupados de uma data."],
             ["POST /api/consultar-disponibilidade", "Sugere horários por data, serviço e período."],
             ["POST /api/criar-agendamento", "Valida e cria o registro no Supabase."],
+            ["POST /api/foundry-chat", "Conecta o chat do site ao agente real do Microsoft Foundry."],
             ["GET /api/listar-agendamentos", "Alimenta o painel didático."],
           ]}
         />
@@ -1166,6 +1090,11 @@ npm run build`} />
           Variáveis obrigatórias: <code>SUPABASE_URL</code> e{" "}
           <code>SUPABASE_SERVICE_ROLE_KEY</code>. A publishable key pode ficar documentada como apoio,
           mas quem cria e lista registros neste projeto são as Functions.
+        </p>
+        <p>
+          Para o chat real do site, configure também <code>AZURE_FOUNDRY_PROJECT_ENDPOINT</code>,{" "}
+          <code>AZURE_FOUNDRY_AGENT_NAME</code> e uma forma de autenticação: credenciais Entra ID
+          ou <code>AZURE_FOUNDRY_API_KEY</code>, se o endpoint permitir API key.
         </p>
       </DocSection>
 
@@ -1540,6 +1469,10 @@ function missingChatFields(form: ChatDraft) {
   ]
     .filter(([, value]) => !value)
     .map(([label]) => label);
+}
+
+function shortIdentifier(value: string) {
+  return value.length > 14 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
 }
 
 function normalizeSearchText(value: string) {

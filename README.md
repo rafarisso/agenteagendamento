@@ -25,7 +25,7 @@ O caso de uso demonstrativo é um agendamento para salão de beleza. O cenário 
 
 Ao final do fluxo, o aluno consegue demonstrar:
 
-1. Uma conversa natural com um agente no Microsoft Foundry.
+1. Uma conversa natural com um agente no Microsoft Foundry, inclusive pelo site.
 2. A chamada de uma ferramenta OpenAPI pelo agente.
 3. A consulta real de disponibilidade por Netlify Function.
 4. A criação de um agendamento no Supabase.
@@ -64,7 +64,7 @@ Ponto importante: o agente não conversa diretamente com o banco de dados. Ele c
 ## Rotas do Site
 
 - `/` - Home institucional do projeto.
-- `/chat` - Demonstração didática com chat no site.
+- `/chat` - Chat integrado ao agente real publicado no Microsoft Foundry.
 - `/painel` - Painel Didático com registros vindos do Supabase.
 - `/documentacao` - Documentação do projeto para professores e alunos.
 - `/sobre` - Informações institucionais e créditos.
@@ -195,11 +195,35 @@ SUPABASE_SERVICE_ROLE_KEY=sua-chave-secreta-do-supabase
 SUPABASE_PUBLISHABLE_KEY=sua-chave-publicavel-do-supabase
 ```
 
+Para o chat real do site com o agente do Foundry:
+
+```bash
+AZURE_FOUNDRY_PROJECT_ENDPOINT=https://seu-recurso.services.ai.azure.com/api/projects/seu-projeto
+AZURE_FOUNDRY_AGENT_NAME=AgenteAgendamento
+AZURE_FOUNDRY_AGENT_VERSION=
+```
+
+Autenticação recomendada para produção:
+
+```bash
+AZURE_TENANT_ID=seu-tenant-id
+AZURE_CLIENT_ID=seu-client-id
+AZURE_CLIENT_SECRET=seu-client-secret
+AZURE_FOUNDRY_SCOPE=https://ai.azure.com/.default
+```
+
+Alternativa para endpoints que aceitam chave:
+
+```bash
+AZURE_FOUNDRY_API_KEY=sua-chave-do-foundry
+```
+
 Para desenvolvimento local, use o arquivo `.env` ou variáveis do ambiente. O arquivo [`.env.example`](.env.example) contém apenas placeholders.
 
 Regra de segurança:
 
 - `SUPABASE_SERVICE_ROLE_KEY` deve ser usada somente nas Netlify Functions.
+- `AZURE_CLIENT_SECRET` e `AZURE_FOUNDRY_API_KEY` também devem ficar apenas na Netlify.
 - Nunca use `SUPABASE_SERVICE_ROLE_KEY` no frontend.
 - Nunca coloque chaves reais no GitHub.
 - A ferramenta OpenAPI do Foundry não precisa de chave do Supabase.
@@ -246,6 +270,8 @@ O arquivo [`netlify.toml`](netlify.toml) já contém:
 - redirects dos endpoints `/api/*`
 - fallback da SPA para `index.html`
 - headers básicos de segurança
+
+O chat do site chama `POST /api/foundry-chat`. Essa Function conversa com o agente real do Microsoft Foundry e preserva o contexto usando `previous_response_id`.
 
 Depois de configurar as variáveis de ambiente na Netlify, faça deploy pelo painel ou pelo GitHub conectado.
 
@@ -345,6 +371,30 @@ Comportamento esperado:
 8. O agente chama `criarAgendamento`.
 9. O registro aparece em `/painel`.
 
+## Como Testar no Site
+
+Depois de configurar as variáveis do Foundry na Netlify, abra:
+
+```text
+https://agente-agendamento.netlify.app/chat
+```
+
+Envie:
+
+```text
+Quero cortar o cabelo sexta à tarde.
+```
+
+O site deve chamar:
+
+```text
+POST /api/foundry-chat
+```
+
+Essa Function chama o agente real no Foundry. Se o agente acionar a ferramenta OpenAPI, o registro será criado no Supabase pela mesma API usada no Playground.
+
+Se o site responder que não foi possível conversar com o agente Foundry, faltam variáveis de autenticação na Netlify ou o endpoint exige Entra ID em vez de API key.
+
 ## Troubleshooting
 
 ### O Foundry diz que o JSON é inválido
@@ -359,6 +409,16 @@ Verifique:
 - se o agente foi salvo depois da ferramenta;
 - se o prompt diz explicitamente para chamar `consultarDisponibilidade`;
 - se a aba **Rastreamentos** mostra `openapi_call`.
+
+### O site `/chat` não conversa com o agente real
+
+Verifique:
+
+- se a Netlify tem `AZURE_FOUNDRY_PROJECT_ENDPOINT`;
+- se a Netlify tem `AZURE_FOUNDRY_AGENT_NAME`;
+- se existe autenticação válida por Entra ID ou API key;
+- se a Function `/api/foundry-chat` está publicada;
+- se o agente foi publicado/salvo no Foundry depois da criação da ferramenta.
 
 ### O agente pede a data completa mesmo quando o usuário diz "sexta"
 
@@ -404,6 +464,7 @@ Em um projeto real:
 - [`netlify/functions/consultar-disponibilidade.ts`](netlify/functions/consultar-disponibilidade.ts) - consulta de disponibilidade.
 - [`netlify/functions/criar-agendamento.ts`](netlify/functions/criar-agendamento.ts) - criação de agendamento.
 - [`netlify/functions/listar-agendamentos.ts`](netlify/functions/listar-agendamentos.ts) - leitura para o painel.
+- [`netlify/functions/foundry-chat.ts`](netlify/functions/foundry-chat.ts) - ponte entre o site e o agente real do Foundry.
 - [`openapi.yaml`](openapi.yaml) - especificação OpenAPI publicada para integração.
 - [`docs/foundry-openapi-tool.json`](docs/foundry-openapi-tool.json) - versão JSON para colar no Foundry.
 - [`docs/prompt-agente-foundry.md`](docs/prompt-agente-foundry.md) - prompt completo do agente.

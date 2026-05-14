@@ -37,6 +37,9 @@ Observação: a chave secreta deve ser usada apenas no backend.
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `SUPABASE_PUBLISHABLE_KEY`
+   - `AZURE_FOUNDRY_PROJECT_ENDPOINT`
+   - `AZURE_FOUNDRY_AGENT_NAME`
+   - credenciais do Foundry para Functions: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID` e `AZURE_CLIENT_SECRET`, ou `AZURE_FOUNDRY_API_KEY` se o endpoint aceitar chave
 4. Publicar o site.
 5. Testar:
    - `/`
@@ -93,13 +96,15 @@ Resultado esperado:
 
 1. O agente interpreta `corte` como `Corte masculino`.
 2. O agente interpreta `sexta à tarde` como `2026-05-15` e período `tarde`.
-3. O agente chama `consultarDisponibilidade`.
-4. O agente sugere os horários retornados.
-5. O usuário escolhe um horário.
-6. O agente pede nome e WhatsApp.
-7. O agente confirma os dados.
-8. O agente chama `criarAgendamento`.
-9. O Painel Didático exibe o registro.
+3. No site, o frontend chama `POST /api/foundry-chat`.
+4. A Netlify Function chama o agente real no Microsoft Foundry.
+5. O agente chama `consultarDisponibilidade`.
+6. O agente sugere os horários retornados.
+7. O usuário escolhe um horário.
+8. O agente pede nome e WhatsApp.
+9. O agente confirma os dados.
+10. O agente chama `criarAgendamento`.
+11. O Painel Didático exibe o registro.
 
 ## 7. Onde Verificar Erros
 
@@ -107,12 +112,14 @@ Resultado esperado:
 - Netlify: Deploy logs e Function logs.
 - Supabase: tabela `public.agendamentos`.
 - Site: rota `/painel`.
+- Site: rota `/chat` para validar se a integração real com `/api/foundry-chat` está ativa.
 
 ## 8. Pontos para Explicar aos Alunos
 
 - O agente não acessa o banco diretamente.
 - A API é o contrato entre o agente e o sistema.
 - A Netlify Function é o backend seguro.
+- O site também não chama o Foundry diretamente; ele chama uma Function para proteger credenciais.
 - O Supabase armazena o registro real.
 - O painel demonstra o resultado.
 - Em produção, o painel precisaria de autenticação.

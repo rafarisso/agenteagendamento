@@ -37,6 +37,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/foundry-chat"
+  to = "/.netlify/functions/foundry-chat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

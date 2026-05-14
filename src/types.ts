@@ -56,3 +56,18 @@ export type AvailabilityResponse = {
   mensagem: string;
   disponivel?: boolean;
 };
+
+export type FoundryToolCall = {
+  type: string;
+  name: string;
+  status: string | null;
+};
+
+export type FoundryChatResponse = {
+  success: boolean;
+  reply: string;
+  responseId: string | null;
+  conversationId: string | null;
+  outputTypes: string[];
+  toolCalls: FoundryToolCall[];
+};

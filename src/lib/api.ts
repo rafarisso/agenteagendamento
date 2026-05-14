@@ -4,6 +4,7 @@ import type {
   AppointmentResponse,
   AvailabilityResponse,
   DayAvailabilityResponse,
+  FoundryChatResponse,
 } from "../types";
 
 export async function createAppointment(form: AppointmentForm): Promise<AppointmentResponse> {
@@ -111,5 +112,42 @@ export async function suggestAvailability(
     horariosDisponiveis: payload.horariosDisponiveis,
     mensagem: payload.mensagem,
     disponivel: payload.disponivel,
+  };
+}
+
+export async function sendFoundryChat(
+  message: string,
+  previousResponseId?: string | null,
+  conversationId?: string | null,
+): Promise<FoundryChatResponse> {
+  const response = await fetch("/api/foundry-chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message,
+      previousResponseId: previousResponseId || undefined,
+      conversationId: conversationId || undefined,
+    }),
+  });
+
+  const payload = (await response.json()) as Partial<FoundryChatResponse> & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Não foi possível conversar com o agente Foundry.");
+  }
+
+  if (!payload.reply) {
+    throw new Error("Resposta inesperada do agente Foundry.");
+  }
+
+  return {
+    success: payload.success ?? true,
+    reply: payload.reply,
+    responseId: payload.responseId ?? null,
+    conversationId: payload.conversationId ?? null,
+    outputTypes: payload.outputTypes ?? [],
+    toolCalls: payload.toolCalls ?? [],
   };
 }
