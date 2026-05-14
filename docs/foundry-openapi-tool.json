@@ -1,0 +1,132 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "SENAI Agenda IA API",
+    "version": "3.0.0",
+    "description": "API didatica para uso no Microsoft Foundry. Primeiro consulte disponibilidade, depois crie o agendamento somente apos confirmacao do usuario."
+  },
+  "servers": [
+    {
+      "url": "https://agente-agendamento.netlify.app"
+    }
+  ],
+  "paths": {
+    "/api/consultar-disponibilidade": {
+      "post": {
+        "operationId": "consultarDisponibilidade",
+        "summary": "Consulta horarios disponiveis",
+        "description": "Use antes de criar agendamento. Retorna horarios disponiveis para data, servico e periodo.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data", "servico", "periodo"],
+                "properties": {
+                  "data": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Data no formato AAAA-MM-DD."
+                  },
+                  "servico": {
+                    "type": "string",
+                    "description": "Servico desejado. Exemplos: Corte masculino, Hidratacao, Escova, Coloracao."
+                  },
+                  "periodo": {
+                    "type": "string",
+                    "enum": ["manha", "tarde"],
+                    "description": "Periodo desejado."
+                  }
+                }
+              },
+              "example": {
+                "data": "2026-05-15",
+                "servico": "Corte masculino",
+                "periodo": "tarde"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Horarios disponiveis retornados com sucesso."
+          },
+          "400": {
+            "description": "Dados invalidos."
+          }
+        }
+      }
+    },
+    "/api/criar-agendamento": {
+      "post": {
+        "operationId": "criarAgendamento",
+        "summary": "Cria um agendamento",
+        "description": "Cria uma solicitacao de agendamento no Supabase. Use somente depois de consultar disponibilidade e receber confirmacao do usuario.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nome", "whatsapp", "servico", "data", "horario"],
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "description": "Nome completo do usuario."
+                  },
+                  "whatsapp": {
+                    "type": "string",
+                    "description": "WhatsApp do usuario."
+                  },
+                  "servico": {
+                    "type": "string",
+                    "description": "Servico confirmado."
+                  },
+                  "data": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Data no formato AAAA-MM-DD."
+                  },
+                  "horario": {
+                    "type": "string",
+                    "description": "Horario no formato HH:MM."
+                  },
+                  "observacoes": {
+                    "type": "string",
+                    "description": "Observacoes opcionais."
+                  },
+                  "origem": {
+                    "type": "string",
+                    "enum": ["chat", "manual", "foundry", "teste"],
+                    "description": "Origem do agendamento. Para o Microsoft Foundry, use foundry."
+                  }
+                }
+              },
+              "example": {
+                "nome": "Rafael Risso",
+                "whatsapp": "11910950968",
+                "servico": "Corte masculino",
+                "data": "2026-05-15",
+                "horario": "15:30",
+                "observacoes": "Agendamento criado pelo agente do Microsoft Foundry",
+                "origem": "foundry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agendamento registrado com sucesso."
+          },
+          "400": {
+            "description": "Dados invalidos."
+          },
+          "409": {
+            "description": "Horario ja ocupado."
+          }
+        }
+      }
+    }
+  }
+}

@@ -35,9 +35,126 @@ import type {
   AppointmentResponse,
 } from "./types";
 
-const repoUrl = "https://github.com/rafarisso/COLOQUE-O-NOME-DO-REPOSITORIO-AQUI";
+const repoUrl = "https://github.com/rafarisso/agenteagendamento";
 const deployUrl = "https://agente-agendamento.netlify.app";
 const openApiUrl = `${deployUrl}/openapi.yaml`;
+
+const foundryToolJsonExample = `{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "SENAI Agenda IA API",
+    "version": "3.0.0",
+    "description": "API didatica para uso no Microsoft Foundry."
+  },
+  "servers": [
+    { "url": "https://agente-agendamento.netlify.app" }
+  ],
+  "paths": {
+    "/api/consultar-disponibilidade": {
+      "post": {
+        "operationId": "consultarDisponibilidade",
+        "summary": "Consulta horarios disponiveis",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["data", "servico", "periodo"],
+                "properties": {
+                  "data": { "type": "string", "format": "date" },
+                  "servico": { "type": "string" },
+                  "periodo": { "type": "string", "enum": ["manha", "tarde"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Horarios disponiveis." } }
+      }
+    },
+    "/api/criar-agendamento": {
+      "post": {
+        "operationId": "criarAgendamento",
+        "summary": "Cria um agendamento",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nome", "whatsapp", "servico", "data", "horario"],
+                "properties": {
+                  "nome": { "type": "string" },
+                  "whatsapp": { "type": "string" },
+                  "servico": { "type": "string" },
+                  "data": { "type": "string", "format": "date" },
+                  "horario": { "type": "string" },
+                  "observacoes": { "type": "string" },
+                  "origem": {
+                    "type": "string",
+                    "enum": ["chat", "manual", "foundry", "teste"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Agendamento registrado." },
+          "400": { "description": "Dados invalidos." },
+          "409": { "description": "Horario ocupado." }
+        }
+      }
+    }
+  }
+}`;
+
+const foundryPromptForDocs = `Você é o agente do projeto SENAI Agenda IA.
+
+O projeto é um laboratório didático do curso MS FOUNDRY 2602 do SENAI.
+
+Você não acessa o Supabase diretamente. Use as ferramentas OpenAPI:
+- consultarDisponibilidade
+- criarAgendamento
+
+Fluxo obrigatório:
+1. Identifique serviço, data e período.
+2. Chame consultarDisponibilidade antes de sugerir horários.
+3. Sugira somente horários retornados pela API.
+4. Peça nome e WhatsApp.
+5. Confirme os dados com o usuário.
+6. Chame criarAgendamento somente após confirmação.
+7. Envie origem como "foundry".
+8. Só diga que salvou se a API retornar success=true.
+
+Serviços oficiais:
+- Corte masculino
+- Hidratação
+- Escova
+- Coloração
+- Diagnóstico Foundry
+- Automação com Agentes
+- Integração Supabase
+- Mentoria técnica
+
+Sinônimos:
+"corte", "cortar cabelo" ou "cabelo" = "Corte masculino".
+"hidratar" ou "tratamento" = "Hidratação".
+"pintar", "tintura" ou "colorir" = "Coloração".
+
+Data de referência da demonstração: 14/05/2026.
+Use YYYY-MM-DD ao chamar a API e DD/MM/YYYY ao falar com o usuário.
+"sexta à tarde" deve ser interpretado como 2026-05-15 no período tarde.
+
+Horários possíveis:
+- manhã: 09:00 e 10:30
+- tarde: 14:00, 15:30 e 16:30
+
+Não há atendimento domingo nem segunda.
+Não existe atendimento à noite.
+Nunca invente disponibilidade.
+Nunca confirme agendamento sem resposta da API.`;
 
 const services = [
   "Corte masculino",
@@ -824,27 +941,33 @@ function DocumentationPage({ navigate }: { navigate: (path: string) => void }) {
       <PageIntro
         kicker="Documentação"
         title="Documentação do Projeto"
-        subtitle="Material de apoio para professores e alunos replicarem o SENAI Agenda IA em outras turmas."
+        subtitle="Guia completo para apresentar, entender e replicar o SENAI Agenda IA em outras turmas."
       />
 
       <DocSection title="1. Visão geral">
         <p>
-          O SENAI Agenda IA é um laboratório didático de agente de agendamento. A estrela do projeto
-          é a conversa: o agente entende o pedido, consulta disponibilidade, sugere horários e
-          registra o agendamento no Supabase.
+          O SENAI Agenda IA é um laboratório didático de agente de agendamento criado para o curso
+          MS FOUNDRY 2602 do SENAI. A estrela do projeto é o agente conversacional: ele entende o
+          pedido, consulta disponibilidade, sugere horários e registra o agendamento no Supabase por
+          meio de uma API serverless.
         </p>
         <p>
-          Caso de uso demonstrativo: agendamento para salão de beleza. A mesma lógica pode ser
-          adaptada para clínicas, escolas, oficinas, consultorias, laboratórios, atendimento interno
-          ou outros serviços.
+          O caso de uso demonstrativo é um agendamento para salão de beleza. Esse cenário foi
+          escolhido por ser simples de explicar em sala, mas a arquitetura pode ser adaptada para
+          clínicas, escolas, oficinas, consultorias, laboratórios, atendimento interno e outros
+          serviços.
         </p>
       </DocSection>
 
       <DocSection title="2. Objetivo pedagógico">
         <p>
-          Este projeto foi criado para que alunos entendam o ciclo completo de um agente de IA
-          conectado a ferramentas externas: prompt, chat, OpenAPI, Netlify Functions, Supabase,
+          O objetivo é mostrar o ciclo completo de uma aplicação com agente de IA: instruções do
+          agente, ferramenta OpenAPI, interface web, Netlify Functions, banco de dados Supabase,
           painel didático e deploy.
+        </p>
+        <p>
+          A principal mensagem técnica é que o agente não conversa diretamente com o banco. Ele chama
+          uma ferramenta HTTP; a Function valida os dados e só então grava no Supabase.
         </p>
       </DocSection>
 
@@ -852,7 +975,6 @@ function DocumentationPage({ navigate }: { navigate: (path: string) => void }) {
         <FlowList
           items={[
             "Usuário",
-            "Chat",
             "Agente Microsoft Foundry",
             "Ferramenta OpenAPI",
             "Netlify Function",
@@ -864,9 +986,22 @@ function DocumentationPage({ navigate }: { navigate: (path: string) => void }) {
 
       <DocSection title="4. Jornada do usuário">
         <p>
-          O usuário conversa de forma natural, recebe sugestões de horários disponíveis, escolhe uma
-          opção, informa nome e WhatsApp e confirma o agendamento.
+          O usuário conversa naturalmente: informa que deseja agendar, recebe horários disponíveis,
+          escolhe uma opção, informa nome e WhatsApp e confirma. Depois da confirmação, o registro
+          aparece no Painel Didático.
         </p>
+        <CodeBlock
+          code={`Usuário: Quero cortar o cabelo sexta à tarde.
+Agente: Vou consultar horários para Corte masculino em 15/05/2026 à tarde.
+Ferramenta: consultarDisponibilidade
+Agente: Encontrei 14:00, 15:30 e 16:30. Qual prefere?
+Usuário: 15:30.
+Agente: Informe nome e WhatsApp.
+Usuário: Rafael Risso, 11910950968.
+Agente: Posso registrar?
+Usuário: Pode.
+Ferramenta: criarAgendamento`}
+        />
       </DocSection>
 
       <DocSection title="5. Jornada técnica">
@@ -875,21 +1010,37 @@ function DocumentationPage({ navigate }: { navigate: (path: string) => void }) {
           sugere horários, coleta os dados obrigatórios e chama <code>criarAgendamento</code>. O
           painel lê os registros por uma Function server-side.
         </p>
+        <KeyValueList
+          items={[
+            ["1. Conversa", "O agente interpreta linguagem natural e organiza os dados."],
+            ["2. OpenAPI", "O Foundry usa operationId para chamar a operação correta."],
+            ["3. Netlify Function", "O backend valida regras, horários, datas e conflitos."],
+            ["4. Supabase", "O banco recebe apenas dados já validados pelo servidor."],
+            ["5. Painel", "A rota /painel mostra os registros para fins pedagógicos."],
+          ]}
+        />
       </DocSection>
 
       <DocSection title="6. Banco de dados Supabase">
+        <p>
+          Execute o arquivo <code>supabase/schema.sql</code> no SQL Editor do Supabase. A tabela
+          principal é <code>public.agendamentos</code>.
+        </p>
         <div className="schema-grid">
           {[
             "id",
             "nome",
-            "whatsapp",
             "email",
+            "telefone",
+            "whatsapp",
             "servico",
             "data",
             "horario",
+            "mensagem",
             "observacoes",
             "status",
             "origem",
+            "metadata",
             "created_at",
             "updated_at",
           ].map((column) => (
@@ -900,6 +1051,10 @@ function DocumentationPage({ navigate }: { navigate: (path: string) => void }) {
           Status permitidos: <code>pendente</code>, <code>confirmado</code> e{" "}
           <code>cancelado</code>. Origens permitidas: <code>chat</code>, <code>manual</code>,{" "}
           <code>foundry</code> e <code>teste</code>.
+        </p>
+        <p>
+          A RLS fica habilitada. A chave <code>service_role</code> deve ser usada somente nas
+          Netlify Functions, nunca no frontend e nunca na ferramenta OpenAPI do Foundry.
         </p>
       </DocSection>
 
@@ -912,16 +1067,49 @@ function DocumentationPage({ navigate }: { navigate: (path: string) => void }) {
             ["GET /api/listar-agendamentos", "Alimenta o painel didático."],
           ]}
         />
-      </DocSection>
-
-      <DocSection title="8. Microsoft Foundry">
         <p>
-          O Foundry deve importar o <code>openapi.yaml</code> como ferramenta. A ordem recomendada é:
-          consultar disponibilidade, sugerir horários e criar agendamento somente após confirmação.
+          As Functions usam sintaxe server-side, recebem JSON, validam o payload, consultam conflitos
+          de horário e retornam mensagens amigáveis para o agente.
         </p>
       </DocSection>
 
-      <DocSection title="9. OpenAPI">
+      <DocSection title="8. Regras da agenda">
+        <KeyValueList
+          items={[
+            ["Dias fechados", "Domingo e segunda-feira."],
+            ["Manhã", "09:00 e 10:30."],
+            ["Tarde", "14:00, 15:30 e 16:30."],
+            ["Noite", "Não existe atendimento à noite neste case didático."],
+            ["Conflito", "Não cria agendamento se o horário já estiver ocupado."],
+          ]}
+        />
+      </DocSection>
+
+      <DocSection title="9. Microsoft Foundry">
+        <p>
+          No Foundry, o agente precisa de uma ferramenta OpenAPI. Essa ferramenta descreve quais
+          endpoints o agente pode chamar e quais campos cada operação espera.
+        </p>
+        <NumberedList
+          items={[
+            "Abra o agente no Microsoft Foundry.",
+            "Entre em Ferramentas.",
+            "Clique em Adicionar.",
+            "Escolha a aba Personalizado.",
+            "Selecione Ferramenta OpenAPI.",
+            "Use o nome senai_agenda_ia_api.",
+            "Use autenticação Anônimo.",
+            "Cole o JSON do arquivo docs/foundry-openapi-tool.json no campo Esquema OpenAPI3.0+.",
+            "Crie a ferramenta, salve o agente e teste no Playground.",
+          ]}
+        />
+        <p>
+          Se o Foundry acusar formato inválido, é porque a tela está validando JSON. Nesse caso,
+          use a versão JSON, não o YAML.
+        </p>
+      </DocSection>
+
+      <DocSection title="10. OpenAPI">
         <p>
           Arquivo publicado: <a href={openApiUrl} target="_blank" rel="noreferrer">{openApiUrl}</a>
         </p>
@@ -935,30 +1123,81 @@ POST /api/consultar-disponibilidade
 operationId: criarAgendamento
 POST /api/criar-agendamento`}
         />
+        <p>
+          Para criação manual da ferramenta no Foundry, use o JSON abaixo ou o arquivo{" "}
+          <code>docs/foundry-openapi-tool.json</code>.
+        </p>
+        <CodeBlock code={foundryToolJsonExample} />
       </DocSection>
 
-      <DocSection title="10. Como replicar o projeto">
+      <DocSection title="11. Prompt recomendado">
+        <p>
+          O prompt completo está em <code>docs/prompt-agente-foundry.md</code>. A versão resumida
+          abaixo contém as regras mais importantes para evitar repetição, datas erradas e
+          confirmações sem API.
+        </p>
+        <CodeBlock code={foundryPromptForDocs} />
+      </DocSection>
+
+      <DocSection title="12. Como replicar o projeto">
         <NumberedList
           items={[
-            "Criar projeto no Supabase e executar o schema SQL.",
+            "Criar repositório no GitHub e enviar o projeto.",
+            "Criar projeto no Supabase.",
+            "Executar supabase/schema.sql no SQL Editor.",
             "Configurar SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Netlify.",
             "Publicar o projeto React/Vite na Netlify.",
-            "Importar o openapi.yaml no Microsoft Foundry.",
-            "Configurar o prompt do agente.",
-            "Testar a conversa completa e conferir o painel didático.",
+            "Criar a ferramenta OpenAPI no Foundry com docs/foundry-openapi-tool.json.",
+            "Colar as instruções de docs/prompt-agente-foundry.md.",
+            "Testar a conversa no Playground.",
+            "Abrir Rastreamentos e confirmar o evento openapi_call.",
+            "Conferir o registro criado no Painel Didático.",
           ]}
         />
       </DocSection>
 
-      <DocSection title="11. Como publicar na Netlify">
+      <DocSection title="13. Como publicar na Netlify">
         <CodeBlock code={`npm install
 npm run build`} />
         <p>
           Build command: <code>npm run build</code>. Publish directory: <code>dist</code>.
         </p>
+        <p>
+          Variáveis obrigatórias: <code>SUPABASE_URL</code> e{" "}
+          <code>SUPABASE_SERVICE_ROLE_KEY</code>. A publishable key pode ficar documentada como apoio,
+          mas quem cria e lista registros neste projeto são as Functions.
+        </p>
       </DocSection>
 
-      <DocSection title="12. Como proteger em produção">
+      <DocSection title="14. Testes recomendados">
+        <NumberedList
+          items={[
+            "Abrir /chat e testar a demonstração didática do site.",
+            "No Foundry, enviar: Quero cortar o cabelo sexta à tarde.",
+            "Conferir se a resposta mostra horários reais.",
+            "Abrir Rastreamentos e confirmar consultarDisponibilidade.",
+            "Informar nome e WhatsApp.",
+            "Confirmar o agendamento.",
+            "Conferir se criarAgendamento foi chamado.",
+            "Abrir /painel e validar se o registro apareceu com origem foundry.",
+          ]}
+        />
+      </DocSection>
+
+      <DocSection title="15. Problemas comuns">
+        <KeyValueList
+          items={[
+            ["JSON inválido", "Na tela manual do Foundry, cole JSON e não YAML."],
+            ["Agente não chama API", "Verifique ferramenta adicionada, agente salvo e Rastreamentos."],
+            ["Data relativa errada", "Atualize a data de referência nas instruções do agente."],
+            ["Erro 400", "Revise data YYYY-MM-DD, período manha/tarde e serviço aceito."],
+            ["Erro 409", "O horário já está reservado."],
+            ["Painel vazio", "Teste a criação e confira as variáveis de ambiente na Netlify."],
+          ]}
+        />
+      </DocSection>
+
+      <DocSection title="16. Como proteger em produção">
         <NumberedList
           items={[
             "Proteger o painel com autenticação.",
@@ -971,10 +1210,10 @@ npm run build`} />
         />
       </DocSection>
 
-      <DocSection title="13. Repositório GitHub">
+      <DocSection title="17. Repositório GitHub">
         <p>
           O repositório contém o código-fonte, schema SQL, Netlify Functions, arquivo OpenAPI e
-          instruções para replicação.
+          instruções para replicação em aula.
         </p>
         <a className="primary-link" href={repoUrl} target="_blank" rel="noreferrer">
           Ver código no GitHub
@@ -982,33 +1221,17 @@ npm run build`} />
         </a>
       </DocSection>
 
-      <DocSection title="14. Prompt recomendado para o agente">
-        <CodeBlock
-          code={`Você é o agente do projeto SENAI Agenda IA.
-Converse naturalmente com o usuário.
-Colete serviço, data e período desejado.
-Consulte disponibilidade antes de confirmar qualquer agendamento.
-Sugira apenas horários retornados pela API.
-Depois que o usuário escolher um horário, colete nome e WhatsApp.
-Crie o agendamento somente após confirmação do usuário.
-Informe que o registro aparecerá no painel didático conectado ao Supabase.
-Não invente disponibilidade.
-Não confirme agendamento sem resposta da API.
-Não peça nem mencione chaves de API, service role ou variáveis secretas.`}
-        />
-      </DocSection>
-
-      <DocSection title="15. Ferramenta técnica opcional">
+      <DocSection title="18. Ferramenta técnica opcional">
         <p>
           O formulário manual foi reposicionado como simulador de API. Ele não é a experiência
-          principal do projeto.
+          principal do projeto; existe para alunos testarem o endpoint sem passar pelo agente.
         </p>
         <button className="secondary-button" type="button" onClick={() => navigate("/simulador-api")}>
           Abrir simulador técnico
         </button>
       </DocSection>
 
-      <DocSection title="16. Créditos">
+      <DocSection title="19. Créditos">
         <p>
           Desenvolvido por Rafael Risso, com inspiração e orientação do Professor Alexandre Becas
           Hernandes. Curso MS FOUNDRY 2602 | SENAI | Maio de 2026.
