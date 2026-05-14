@@ -77,6 +77,12 @@ const initialForm: AppointmentForm = {
   email: "",
 };
 
+const initialChatForm: AppointmentForm = {
+  ...initialForm,
+  servico: "",
+  horario: "",
+};
+
 const sampleAppointments: AppointmentRecord[] = [
   {
     id: "demo-001",
@@ -498,7 +504,7 @@ function ChatPage() {
     },
   ]);
   const [input, setInput] = useState("");
-  const [draft, setDraft] = useState<AppointmentForm>(initialForm);
+  const [draft, setDraft] = useState<AppointmentForm>(initialChatForm);
   const [availability, setAvailability] = useState<{
     data: string;
     horario: string;
@@ -555,7 +561,7 @@ function ChatPage() {
 
         const response = await createAppointment(nextDraft);
         pushAgentMessage(`${response.message}. Protocolo: ${response.id.slice(0, 8)}.`);
-        setDraft(initialForm);
+        setDraft(initialChatForm);
         setAvailability(null);
         return;
       }
