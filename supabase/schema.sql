@@ -113,4 +113,4 @@ create policy agendamentos_insert_anon
   );
 
 comment on table public.agendamentos is
-  'Agendamentos do projeto SENAI Agenda IA recebidos por Netlify Functions e usados como case didatico do curso MS FOUNDRY 2602.';
+  'Agendamentos do projeto SENAI Agenda IA recebidos por Netlify Functions e usados como case didático do curso MS FOUNDRY 2602.';
