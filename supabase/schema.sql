@@ -3,10 +3,15 @@ create extension if not exists pgcrypto;
 create table if not exists public.agendamentos (
   id uuid primary key default gen_random_uuid(),
   nome text not null check (char_length(trim(nome)) >= 3),
-  email text not null check (email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$'),
-  telefone text not null check (char_length(trim(telefone)) >= 8),
+  email text,
+  telefone text,
+  whatsapp text,
   servico text not null check (
     servico in (
+      'Corte masculino',
+      'Hidratacao',
+      'Escova',
+      'Coloracao',
       'Diagnostico Foundry',
       'Automacao com Agentes',
       'Integracao Supabase',
@@ -16,14 +21,36 @@ create table if not exists public.agendamentos (
   data date not null,
   horario time without time zone not null,
   mensagem text,
+  observacoes text,
   status text not null default 'pendente' check (
     status in ('pendente', 'confirmado', 'cancelado', 'concluido')
   ),
   origem text not null default 'site',
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  check (char_length(trim(coalesce(whatsapp, telefone, ''))) >= 8)
 );
+
+alter table public.agendamentos
+  add column if not exists email text,
+  add column if not exists telefone text,
+  add column if not exists whatsapp text,
+  add column if not exists mensagem text,
+  add column if not exists observacoes text,
+  add column if not exists origem text not null default 'site',
+  add column if not exists metadata jsonb not null default '{}'::jsonb,
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.agendamentos
+  alter column email drop not null;
+
+update public.agendamentos
+set
+  whatsapp = coalesce(whatsapp, telefone),
+  observacoes = coalesce(observacoes, mensagem)
+where whatsapp is null or observacoes is null;
 
 create index if not exists agendamentos_data_horario_idx
   on public.agendamentos (data, horario);
@@ -62,10 +89,12 @@ grant insert (
   nome,
   email,
   telefone,
+  whatsapp,
   servico,
   data,
   horario,
   mensagem,
+  observacoes,
   origem,
   metadata
 ) on public.agendamentos to anon;
@@ -80,7 +109,8 @@ create policy agendamentos_insert_anon
     status = 'pendente'
     and origem = 'site'
     and jsonb_typeof(metadata) = 'object'
+    and char_length(trim(coalesce(whatsapp, telefone, ''))) >= 8
   );
 
 comment on table public.agendamentos is
-  'Agendamentos recebidos pela Netlify Function /api/criar-agendamento com RLS para INSERT anonimo validado.';
+  'Agendamentos do projeto SENAI Agenda IA recebidos por Netlify Functions e usados como case didatico do curso MS FOUNDRY 2602.';

@@ -1,24 +1,51 @@
-# Agendamento Foundry
+# SENAI Agenda IA
 
-Aplicacao de portifolio para criar agendamentos com front-end React, Netlify
-Functions, Supabase e especificacao OpenAPI pronta para uso como ferramenta no
-Microsoft Foundry.
+Projeto didatico de agente de agendamento conectado ao Microsoft Foundry, Supabase e Netlify.
 
-## Visao geral
+## Informacoes
 
-- Interface responsiva para registrar pedidos de consultoria.
-- Endpoint publico `/api/criar-agendamento` roteado por redirect para Netlify Function.
-- Persistencia no Supabase usando publishable/anon key em uma Netlify Function server-side.
-- `schema.sql` com tabela, checks, indices, trigger de `updated_at`, RLS e policy de INSERT.
-- `openapi.yaml` com `operationId`, schemas simples e contrato compativel com Foundry.
+- Autor: Rafael Risso
+- Professor: Alexandre Becas Hernandes
+- Curso: MS FOUNDRY 2602
+- Instituicao: SENAI
+- Data: Maio de 2026
+- Deploy: https://agente-agendamento.netlify.app/
+- GitHub: https://github.com/SEU-USUARIO/SEU-REPOSITORIO
 
-## Stack
+## Objetivo do Projeto
 
-- React 18 + TypeScript + Vite
+O SENAI Agenda IA demonstra como um agente criado no Microsoft Foundry pode ir alem da conversa. O agente coleta dados do usuario, chama uma API serverless hospedada na Netlify e registra informacoes reais no Supabase.
+
+O caso de uso demonstrativo e um agendamento para salao de beleza, mas a arquitetura pode ser aplicada em escolas, clinicas, consultorias, oficinas, restaurantes, setores administrativos e atendimento interno de empresas.
+
+## Tecnologias Utilizadas
+
+- Microsoft Foundry
+- React
+- TypeScript
+- Vite
+- TailwindCSS como referencia didatica de stack visual moderna
+- Supabase
+- Netlify
 - Netlify Functions
-- Supabase JavaScript Client
-- OpenAPI 3.0.1
+- OpenAPI
 - Lucide React
+
+## Arquitetura
+
+```text
+Usuario
+  ↓
+Interface Web
+  ↓
+Agente Microsoft Foundry
+  ↓
+API Netlify Function
+  ↓
+Supabase
+  ↓
+Painel administrativo
+```
 
 ## Estrutura
 
@@ -26,7 +53,10 @@ Microsoft Foundry.
 .
 |-- netlify/
 |   `-- functions/
-|       `-- criar-agendamento.ts
+|       |-- criar-agendamento.ts
+|       `-- listar-agendamentos.ts
+|-- public/
+|   `-- openapi.yaml
 |-- src/
 |   |-- lib/api.ts
 |   |-- App.tsx
@@ -40,72 +70,188 @@ Microsoft Foundry.
 `-- README.md
 ```
 
-## Rodando localmente
+## Como Rodar Localmente
 
 ```bash
 npm install
 npm run dev
 ```
 
-Para testar a Function com redirects locais, use Netlify Dev:
+Para testar redirects e Netlify Functions localmente:
 
 ```bash
 npx netlify dev
 ```
 
-## Variaveis de ambiente
-
-Configure na Netlify, em **Site configuration > Environment variables**:
+Para validar build de producao:
 
 ```bash
-SUPABASE_URL=https://seu-projeto.supabase.co
-SUPABASE_PUBLISHABLE_KEY=sua-publishable-key
+npm run build
 ```
 
-`SUPABASE_ANON_KEY` tambem funciona em projetos legados. Nao use prefixos como
-`VITE_`, `NEXT_PUBLIC_` ou `PUBLIC_`, porque o front-end nao precisa falar com o
-Supabase diretamente.
-
-## Configurando Supabase
+## Como Configurar o Supabase
 
 1. Crie um projeto no Supabase.
 2. Abra o SQL Editor.
 3. Execute o arquivo `supabase/schema.sql`.
 4. Confirme que a tabela `public.agendamentos` foi criada.
-5. Mantenha RLS habilitado; a policy permite apenas INSERT anonimo validado pela Function.
+5. Mantenha RLS habilitado.
 
-## Deploy na Netlify
+Campos principais da tabela:
 
-1. Conecte o repositorio na Netlify.
-2. Use `npm run build` como build command.
-3. Use `dist` como publish directory.
-4. Configure as variaveis `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`.
-5. Faca o deploy e teste:
+- `id`
+- `nome`
+- `whatsapp`
+- `servico`
+- `data`
+- `horario`
+- `observacoes`
+- `status`
+- `created_at`
+- `updated_at`
+
+O schema tambem mantem `telefone` e `mensagem` por compatibilidade com a primeira versao do projeto.
+
+## Como Configurar a Netlify
+
+Build command:
 
 ```bash
-curl -X POST https://SEU-SITE.netlify.app/api/criar-agendamento \
-  -H "Content-Type: application/json" \
-  -d "{\"nome\":\"Rafael Risso\",\"email\":\"contato@example.com\",\"telefone\":\"11999999999\",\"servico\":\"Diagnostico Foundry\",\"data\":\"2026-05-20\",\"horario\":\"09:00\"}"
+npm run build
 ```
 
-## Microsoft Foundry
+Publish directory:
 
-Importe a especificacao publicada como ferramenta do agente:
+```bash
+dist
+```
+
+Variaveis de ambiente:
+
+```bash
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sua-publishable-key
+SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
+```
+
+Variaveis opcionais para variantes didaticas com leitura direta no frontend:
+
+```bash
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-anon-key-ou-publishable-key
+```
+
+## Avisos de Seguranca
+
+- Nunca coloque `SUPABASE_SERVICE_ROLE_KEY` no frontend.
+- Nunca use prefixos publicos como `VITE_`, `NEXT_PUBLIC_` ou `PUBLIC_` em uma service role.
+- A service role deve existir apenas em Netlify Functions.
+- O frontend chama apenas rotas `/api/*`.
+- O `.env.example` nao deve conter valores reais.
+- RLS deve permanecer habilitado no Supabase.
+
+## Endpoint da API
+
+```text
+POST /api/criar-agendamento
+```
+
+Exemplo de payload:
+
+```json
+{
+  "nome": "Juliana Alves",
+  "whatsapp": "11988887777",
+  "servico": "Hidratacao",
+  "data": "2026-05-15",
+  "horario": "15:00",
+  "observacoes": "Cliente prefere atendimento com profissional feminina"
+}
+```
+
+Exemplo de resposta:
+
+```json
+{
+  "success": true,
+  "message": "Agendamento registrado com sucesso",
+  "status": "pendente",
+  "data": {
+    "id": "uuid-do-agendamento",
+    "nome": "Juliana Alves",
+    "whatsapp": "11988887777",
+    "servico": "Hidratacao",
+    "data": "2026-05-15",
+    "horario": "15:00",
+    "observacoes": "Cliente prefere atendimento com profissional feminina",
+    "status": "pendente"
+  }
+}
+```
+
+## Como Conectar ao Microsoft Foundry
+
+1. Crie um agente no Microsoft Foundry.
+2. Configure o prompt para coletar nome, WhatsApp, servico, data e horario.
+3. Adicione uma ferramenta usando o arquivo OpenAPI.
+4. Configure a ferramenta para chamar `criarAgendamento`.
+5. Teste uma conversa completa e confirme o registro no painel.
+
+Endpoint publico:
+
+```text
+https://agente-agendamento.netlify.app/api/criar-agendamento
+```
+
+## Como Usar o openapi.yaml
+
+Arquivo local:
+
+```text
+openapi.yaml
+```
+
+Arquivo publicado:
 
 ```text
 https://agente-agendamento.netlify.app/openapi.yaml
 ```
 
-O contrato usa OpenAPI 3.0.1, `operationId` estavel e schemas sem composicoes
-complexas para facilitar a ingestao pelo Foundry.
+O contrato usa:
 
-## Checklist de seguranca
+- `operationId: criarAgendamento`
+- `POST /api/criar-agendamento`
+- campos obrigatorios: `nome`, `whatsapp`, `servico`, `data`, `horario`
+- campo opcional: `observacoes`
 
-- Nenhuma chave administrativa e versionada.
-- O front-end chama somente `/api/criar-agendamento`.
-- `netlify.toml` coloca o redirect da API antes do fallback SPA.
-- RLS esta habilitado no schema Supabase e nao ha policy de SELECT para `anon`.
+## Como Professores e Alunos Podem Replicar
+
+1. Faça fork ou clone do repositorio.
+2. Crie um novo projeto Supabase.
+3. Execute `supabase/schema.sql`.
+4. Crie um novo site no Netlify.
+5. Configure as variaveis de ambiente.
+6. Publique o projeto.
+7. Importe o `openapi.yaml` no Microsoft Foundry.
+8. Configure o prompt do agente.
+9. Teste o fluxo completo.
+10. Adapte o caso de uso para outra turma ou outro segmento.
+
+## Prompt Base do Agente
+
+```text
+Voce e o assistente SENAI Agenda IA.
+Seu papel e coletar dados de agendamento de forma clara, educada e objetiva.
+Colete obrigatoriamente: nome, WhatsApp, servico, data e horario.
+Nao peca chaves de API ao usuario.
+Nao mencione service role.
+Quando todos os dados estiverem completos, chame a ferramenta criarAgendamento.
+Se algum dado estiver faltando, faca apenas a pergunta necessaria.
+Ao concluir, informe que o agendamento ficou com status pendente.
+```
 
 ## Assinatura
 
-Desenvolvido por Rafael Risso | Curso de Microsoft Foundry | Maio 2026
+Projeto desenvolvido por Rafael Risso, com inspiracao e orientacao do Professor Alexandre Becas Hernandes.
+
+Curso MS FOUNDRY 2602 | SENAI | Maio de 2026

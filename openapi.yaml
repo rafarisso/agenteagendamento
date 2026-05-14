@@ -1,16 +1,16 @@
 openapi: 3.0.1
 info:
-  title: API de Agendamento Foundry
-  version: 1.0.0
-  description: API publica para criar agendamentos por meio de uma Netlify Function.
+  title: SENAI Agenda IA API
+  version: 2.0.0
+  description: Cria uma nova solicitação de agendamento no projeto SENAI Agenda IA.
 servers:
   - url: https://agente-agendamento.netlify.app
 paths:
   /api/criar-agendamento:
     post:
       operationId: criarAgendamento
-      summary: Cria um novo agendamento
-      description: Registra um pedido de agendamento e retorna o protocolo criado.
+      summary: Cria uma nova solicitação de agendamento
+      description: Cria uma nova solicitação de agendamento no projeto SENAI Agenda IA.
       requestBody:
         required: true
         content:
@@ -18,18 +18,18 @@ paths:
             schema:
               $ref: "#/components/schemas/CriarAgendamentoRequest"
             examples:
-              exemplo:
+              salao:
+                summary: Caso de uso demonstrativo para salão de beleza
                 value:
-                  nome: Rafael Risso
-                  email: contato@example.com
-                  telefone: "(11) 99999-9999"
-                  servico: Diagnostico Foundry
-                  data: "2026-05-20"
-                  horario: "09:00"
-                  mensagem: Quero avaliar uma automacao com agentes.
+                  nome: Juliana Alves
+                  whatsapp: "11988887777"
+                  servico: Hidratacao
+                  data: "2026-05-15"
+                  horario: "15:00"
+                  observacoes: Cliente prefere atendimento com profissional feminina
       responses:
         "201":
-          description: Agendamento criado.
+          description: Agendamento registrado com sucesso.
           content:
             application/json:
               schema:
@@ -40,14 +40,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
-        "500":
-          description: Variaveis de ambiente ausentes.
+        "409":
+          description: Horario ja reservado.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Erro"
-        "409":
-          description: Horario ja reservado.
+        "500":
+          description: Variaveis de ambiente ausentes.
           content:
             application/json:
               schema:
@@ -65,8 +65,7 @@ components:
       additionalProperties: false
       required:
         - nome
-        - email
-        - telefone
+        - whatsapp
         - servico
         - data
         - horario
@@ -74,18 +73,18 @@ components:
         nome:
           type: string
           minLength: 3
-          example: Rafael Risso
-        email:
-          type: string
-          format: email
-          example: contato@example.com
-        telefone:
+          example: Juliana Alves
+        whatsapp:
           type: string
           minLength: 8
-          example: "(11) 99999-9999"
+          example: "11988887777"
         servico:
           type: string
           enum:
+            - Corte masculino
+            - Hidratacao
+            - Escova
+            - Coloracao
             - Diagnostico Foundry
             - Automacao com Agentes
             - Integracao Supabase
@@ -93,25 +92,29 @@ components:
         data:
           type: string
           format: date
-          example: "2026-05-20"
+          example: "2026-05-15"
         horario:
           type: string
           pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
-          example: "09:00"
-        mensagem:
+          example: "15:00"
+        observacoes:
           type: string
           maxLength: 1000
-          example: Quero avaliar uma automacao com agentes.
+          example: Cliente prefere atendimento com profissional feminina
     CriarAgendamentoResponse:
       type: object
       required:
-        - id
-        - status
+        - success
         - message
+        - status
+        - data
       properties:
-        id:
+        success:
+          type: boolean
+          example: true
+        message:
           type: string
-          format: uuid
+          example: Agendamento registrado com sucesso
         status:
           type: string
           enum:
@@ -119,8 +122,27 @@ components:
             - confirmado
             - cancelado
             - concluido
-        message:
-          type: string
+          example: pendente
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            nome:
+              type: string
+            whatsapp:
+              type: string
+            servico:
+              type: string
+            data:
+              type: string
+              format: date
+            horario:
+              type: string
+            observacoes:
+              type: string
+              nullable: true
     Erro:
       type: object
       required:

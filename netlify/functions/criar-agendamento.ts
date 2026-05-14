@@ -5,27 +5,35 @@ type AppointmentPayload = {
   nome?: unknown;
   email?: unknown;
   telefone?: unknown;
+  whatsapp?: unknown;
   servico?: unknown;
   data?: unknown;
   horario?: unknown;
   mensagem?: unknown;
+  observacoes?: unknown;
   metadata?: unknown;
 };
 
 type AppointmentInsert = {
   id: string;
   nome: string;
-  email: string;
+  email: string | null;
   telefone: string;
+  whatsapp: string;
   servico: string;
   data: string;
   horario: string;
   mensagem: string | null;
+  observacoes: string | null;
   origem: string;
   metadata: Record<string, unknown>;
 };
 
 const allowedServices = new Set([
+  "Corte masculino",
+  "Hidratacao",
+  "Escova",
+  "Coloracao",
   "Diagnostico Foundry",
   "Automacao com Agentes",
   "Integracao Supabase",
@@ -95,9 +103,20 @@ export default async (request: Request) => {
 
   return json(
     {
+      success: true,
       id: parsed.value.id,
       status: "pendente",
-      message: "Agendamento recebido com sucesso.",
+      message: "Agendamento registrado com sucesso",
+      data: {
+        id: parsed.value.id,
+        nome: parsed.value.nome,
+        whatsapp: parsed.value.whatsapp,
+        servico: parsed.value.servico,
+        data: parsed.value.data,
+        horario: parsed.value.horario,
+        observacoes: parsed.value.observacoes,
+        status: "pendente",
+      },
     },
     201,
   );
@@ -117,24 +136,25 @@ function json(payload: unknown, status: number) {
 function parsePayload(payload: AppointmentPayload):
   | { ok: true; value: AppointmentInsert }
   | { ok: false; error: string } {
+  const id = crypto.randomUUID();
   const nome = cleanString(payload.nome);
   const email = cleanString(payload.email);
-  const telefone = cleanString(payload.telefone);
+  const whatsapp = cleanString(payload.whatsapp) || cleanString(payload.telefone);
   const servico = cleanString(payload.servico);
   const data = cleanString(payload.data);
   const horario = cleanString(payload.horario);
-  const mensagem = cleanString(payload.mensagem);
+  const observacoes = cleanString(payload.observacoes) || cleanString(payload.mensagem);
 
   if (!nome || nome.length < 3) {
     return { ok: false, error: "Informe um nome com pelo menos 3 caracteres." };
   }
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, error: "Informe um email valido." };
   }
 
-  if (!telefone || telefone.length < 8) {
-    return { ok: false, error: "Informe um telefone valido." };
+  if (!whatsapp || whatsapp.length < 8) {
+    return { ok: false, error: "Informe um WhatsApp valido." };
   }
 
   if (!servico || !allowedServices.has(servico)) {
@@ -152,16 +172,18 @@ function parsePayload(payload: AppointmentPayload):
   return {
     ok: true,
     value: {
+      id,
       nome,
-      email,
-      telefone,
+      email: email || null,
+      telefone: whatsapp,
+      whatsapp,
       servico,
       data,
       horario,
-      mensagem: mensagem || null,
+      mensagem: observacoes || null,
+      observacoes: observacoes || null,
       origem: "site",
       metadata: normalizeMetadata(payload.metadata),
-      id: crypto.randomUUID(),
     },
   };
 }
