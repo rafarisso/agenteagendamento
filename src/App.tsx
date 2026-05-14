@@ -50,6 +50,41 @@ const services = [
   "Mentoria técnica",
 ];
 
+const chatServiceAliases = [
+  {
+    service: services[0],
+    aliases: ["corte", "cortar", "cabelo", "cortar o cabelo", "corte de cabelo"],
+  },
+  {
+    service: services[1],
+    aliases: ["hidratacao", "hidratar", "tratamento", "tratamento capilar"],
+  },
+  {
+    service: services[2],
+    aliases: ["escova", "escovar"],
+  },
+  {
+    service: services[3],
+    aliases: ["coloracao", "colorir", "pintar", "tintura", "pintura"],
+  },
+  {
+    service: services[4],
+    aliases: ["diagnostico", "foundry", "diagnostico foundry"],
+  },
+  {
+    service: services[5],
+    aliases: ["automacao", "agentes", "automacao com agentes"],
+  },
+  {
+    service: services[6],
+    aliases: ["integracao", "supabase", "integracao supabase"],
+  },
+  {
+    service: services[7],
+    aliases: ["mentoria", "mentoria tecnica"],
+  },
+];
+
 const navItems = [
   { label: "Início", path: "/", icon: Home },
   { label: "Demonstração com Chat", path: "/chat", icon: MessageSquareText },
@@ -314,18 +349,24 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
       setDraft(nextDraft);
 
       if (!nextDraft.servico) {
-        pushAgentMessage("Qual serviço deseja agendar? Neste case usamos salão de beleza apenas como cenário demonstrativo.");
+        pushAgentMessage(
+          "Qual serviço deseja agendar? Neste case usamos salão de beleza apenas como cenário demonstrativo. Exemplos: corte, hidratação, escova ou coloração.",
+        );
         return;
       }
 
       if (!nextDraft.data) {
-        pushAgentMessage("Para qual data? Você pode dizer algo como sexta, amanhã ou 15/05/2026.");
+        pushAgentMessage(
+          `Entendi: ${nextDraft.servico}. Para qual data? Você pode dizer algo como sexta, amanhã ou 15/05/2026.`,
+        );
         return;
       }
 
       if (!nextDraft.horario) {
         if (!nextDraft.periodo) {
-          pushAgentMessage("Qual período prefere: manhã ou tarde?");
+          pushAgentMessage(
+            `Entendi: ${nextDraft.servico} em ${formatDate(nextDraft.data)}. Prefere manhã ou tarde?`,
+          );
           return;
         }
 
@@ -1143,7 +1184,7 @@ function extractChatData(text: string, current: ChatDraft): Partial<ChatDraft> {
   const normalizedText = normalizeSearchText(text);
   const time = parseTimeFromText(text);
   const phone = text.replace(/\D/g, "").match(/\d{10,13}/)?.[0];
-  const service = services.find((item) => normalizedText.includes(normalizeSearchText(item)));
+  const service = detectServiceFromText(normalizedText);
   const name = parseNameFromText(text);
 
   return {
@@ -1154,6 +1195,19 @@ function extractChatData(text: string, current: ChatDraft): Partial<ChatDraft> {
     horario: time ?? current.horario,
     periodo: parsePeriodFromText(text) ?? current.periodo,
   };
+}
+
+function detectServiceFromText(normalizedText: string) {
+  const exactService = services.find((item) => normalizedText.includes(normalizeSearchText(item)));
+  if (exactService) {
+    return exactService;
+  }
+
+  return (
+    chatServiceAliases.find(({ aliases }) =>
+      aliases.some((alias) => normalizedText.includes(normalizeSearchText(alias))),
+    )?.service ?? null
+  );
 }
 
 function parseTimeFromText(text: string) {
