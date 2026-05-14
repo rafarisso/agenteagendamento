@@ -13,6 +13,7 @@ type AppointmentPayload = {
 };
 
 type AppointmentInsert = {
+  id: string;
   nome: string;
   email: string;
   telefone: string;
@@ -50,10 +51,16 @@ export default async (request: Request) => {
   }
 
   const supabaseUrl = readEnv("SUPABASE_URL");
-  const serviceRoleKey = readEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseKey =
+    readEnv("SUPABASE_PUBLISHABLE_KEY") ??
+    readEnv("SUPABASE_ANON_KEY") ??
+    readEnv("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    return json({ error: "Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Netlify." }, 500);
+  if (!supabaseUrl || !supabaseKey) {
+    return json(
+      { error: "Configure SUPABASE_URL e SUPABASE_PUBLISHABLE_KEY na Netlify." },
+      500,
+    );
   }
 
   let payload: AppointmentPayload;
@@ -68,18 +75,14 @@ export default async (request: Request) => {
     return json({ error: parsed.error }, 400);
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
     },
   });
 
-  const { data, error } = await supabase
-    .from("agendamentos")
-    .insert(parsed.value)
-    .select("id,status,created_at")
-    .single();
+  const { error } = await supabase.from("agendamentos").insert(parsed.value);
 
   if (error) {
     console.error("Erro ao criar agendamento no Supabase", error);
@@ -92,8 +95,8 @@ export default async (request: Request) => {
 
   return json(
     {
-      id: data.id as string,
-      status: data.status as string,
+      id: parsed.value.id,
+      status: "pendente",
       message: "Agendamento recebido com sucesso.",
     },
     201,
@@ -158,6 +161,7 @@ function parsePayload(payload: AppointmentPayload):
       mensagem: mensagem || null,
       origem: "site",
       metadata: normalizeMetadata(payload.metadata),
+      id: crypto.randomUUID(),
     },
   };
 }

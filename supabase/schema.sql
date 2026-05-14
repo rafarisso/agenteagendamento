@@ -55,8 +55,32 @@ execute function public.set_updated_at();
 alter table public.agendamentos enable row level security;
 
 revoke all on public.agendamentos from anon, authenticated;
-grant usage on schema public to service_role;
+grant usage on schema public to service_role, anon;
 grant select, insert, update, delete on public.agendamentos to service_role;
+grant insert (
+  id,
+  nome,
+  email,
+  telefone,
+  servico,
+  data,
+  horario,
+  mensagem,
+  origem,
+  metadata
+) on public.agendamentos to anon;
+
+drop policy if exists agendamentos_insert_anon on public.agendamentos;
+
+create policy agendamentos_insert_anon
+  on public.agendamentos
+  for insert
+  to anon
+  with check (
+    status = 'pendente'
+    and origem = 'site'
+    and jsonb_typeof(metadata) = 'object'
+  );
 
 comment on table public.agendamentos is
-  'Agendamentos recebidos pela Netlify Function /api/criar-agendamento.';
+  'Agendamentos recebidos pela Netlify Function /api/criar-agendamento com RLS para INSERT anonimo validado.';

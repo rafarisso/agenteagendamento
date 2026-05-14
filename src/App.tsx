@@ -115,8 +115,8 @@ function App() {
             </span>
             <h2>Agende consultorias e envie os dados com seguranca para o Supabase.</h2>
             <p>
-              O front-end conversa com a rota publica da Netlify; a chave de service role fica
-              isolada na Function.
+              O front-end conversa com a rota publica da Netlify; a Function valida e grava via
+              RLS no Supabase.
             </p>
           </div>
           <div className="signal-grid" aria-label="Indicadores">
@@ -292,7 +292,7 @@ function App() {
                 <h3>Arquitetura segura</h3>
               </div>
               <ul>
-                <li>Service role somente em variavel server-side da Netlify.</li>
+                <li>Function server-side com chave publicavel e policy de INSERT.</li>
                 <li>RLS habilitado no schema do Supabase.</li>
                 <li>OpenAPI simples para uso como ferramenta no Foundry.</li>
               </ul>
