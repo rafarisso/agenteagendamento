@@ -90,11 +90,10 @@ curl -X POST https://SEU-SITE.netlify.app/api/criar-agendamento \
 
 ## Microsoft Foundry
 
-Importe `openapi.yaml` como ferramenta do agente e substitua o servidor:
+Importe a especificacao publicada como ferramenta do agente:
 
-```yaml
-servers:
-  - url: https://SEU-SITE.netlify.app
+```text
+https://agente-agendamento.netlify.app/openapi.yaml
 ```
 
 O contrato usa OpenAPI 3.0.1, `operationId` estavel e schemas sem composicoes
