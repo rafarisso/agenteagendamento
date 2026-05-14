@@ -1,24 +1,25 @@
 # SENAI Agenda IA
 
-Projeto didático de agente de agendamento conectado ao Microsoft Foundry, Supabase e Netlify.
+Laboratório didático de agente de agendamento com Microsoft Foundry e Supabase.
 
 ## Informações
 
+- Projeto: SENAI Agenda IA
 - Autor: Rafael Risso
-- Professor: Alexandre Becas Hernandes
+- Professor homenageado: Alexandre Becas Hernandes
 - Curso: MS FOUNDRY 2602
 - Instituição: SENAI
 - Data: Maio de 2026
 - Deploy: https://agente-agendamento.netlify.app/
-- GitHub: https://github.com/rafarisso/agenteagendamento
+- Repositório: https://github.com/rafarisso/COLOQUE-O-NOME-DO-REPOSITORIO-AQUI
 
-## Objetivo do Projeto
+## Tese do Projeto
 
-O SENAI Agenda IA demonstra como um agente criado no Microsoft Foundry pode ir além da conversa. O agente coleta dados do usuário, consulta disponibilidade, chama uma API serverless hospedada na Netlify e registra informações reais no Supabase.
+Este projeto demonstra a diferença entre um chatbot comum e um agente conectado a ferramentas reais. O agente entende a solicitação do usuário, consulta disponibilidade, sugere horários, chama uma API e registra o agendamento no Supabase.
 
-O caso de uso demonstrativo é um agendamento para salão de beleza, mas a arquitetura pode ser aplicada em escolas, clínicas, consultorias, oficinas, restaurantes, setores administrativos e atendimento interno de empresas.
+Caso de uso demonstrativo: agendamento para salão de beleza. A lógica pode ser adaptada para clínicas, escolas, oficinas, consultorias, laboratórios, atendimento interno e outros serviços.
 
-## Tecnologias Utilizadas
+## Tecnologias
 
 - Microsoft Foundry
 - React
@@ -28,176 +29,51 @@ O caso de uso demonstrativo é um agendamento para salão de beleza, mas a arqui
 - Netlify
 - Netlify Functions
 - OpenAPI
-- Lucide React
 
 ## Arquitetura
 
 ```text
 Usuário
   ↓
-Interface Web
+Chat
   ↓
 Agente Microsoft Foundry
   ↓
-API Netlify Function
+Ferramenta OpenAPI
+  ↓
+Netlify Function
   ↓
 Supabase
   ↓
-Painel administrativo
+Painel Didático
 ```
 
-## Funcionalidades
+## Rotas
 
-- Home institucional do projeto SENAI Agenda IA.
-- Formulário de agendamento para o caso demonstrativo de salão de beleza.
-- Chat demonstrativo que consulta disponibilidade e cria agendamento.
-- Painel de agendamentos com aviso pedagógico de acesso.
-- Documentação didática para professores e alunos.
-- Página de integração com Microsoft Foundry.
-- OpenAPI para conectar as ferramentas ao agente.
+- `/` - Home institucional.
+- `/chat` - Demonstração principal com chat.
+- `/painel` - Painel didático conectado ao Supabase.
+- `/documentacao` - Documentação completa do projeto.
+- `/sobre` - Informações institucionais e créditos.
+- `/simulador-api` - Rota secundária para testar manualmente o endpoint de criação.
 
-## Estrutura
+## Endpoints
 
-```text
-.
-|-- netlify/
-|   `-- functions/
-|       |-- consultar-disponibilidade.ts
-|       |-- criar-agendamento.ts
-|       `-- listar-agendamentos.ts
-|-- public/
-|   `-- openapi.yaml
-|-- src/
-|   |-- lib/api.ts
-|   |-- App.tsx
-|   |-- main.tsx
-|   |-- styles.css
-|   `-- types.ts
-|-- supabase/schema.sql
-|-- openapi.yaml
-|-- netlify.toml
-|-- .env.example
-`-- README.md
-```
+### GET `/api/disponibilidade?data=YYYY-MM-DD`
 
-## Como Rodar Localmente
+Lista os horários didáticos de uma data.
 
-```bash
-npm install
-npm run dev
-```
-
-Para testar redirects e Netlify Functions localmente:
-
-```bash
-npx netlify dev
-```
-
-Para validar build de produção:
-
-```bash
-npm run build
-```
-
-## Como Configurar o Supabase
-
-1. Crie um projeto no Supabase.
-2. Abra o SQL Editor.
-3. Execute o arquivo `supabase/schema.sql`.
-4. Confirme que a tabela `public.agendamentos` foi criada.
-5. Mantenha RLS habilitado.
-
-Campos principais da tabela:
-
-- `id`
-- `nome`
-- `whatsapp`
-- `servico`
-- `data`
-- `horario`
-- `observacoes`
-- `status`
-- `created_at`
-- `updated_at`
-
-O schema também mantém `telefone` e `mensagem` por compatibilidade com a primeira versão do projeto.
-
-## Como Configurar a Netlify
-
-Build command:
-
-```bash
-npm run build
-```
-
-Publish directory:
-
-```bash
-dist
-```
-
-Variáveis de ambiente:
-
-```bash
-SUPABASE_URL=https://seu-projeto.supabase.co
-SUPABASE_PUBLISHABLE_KEY=sua-publishable-key
-SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
-```
-
-Variáveis opcionais para variantes didáticas com leitura direta no frontend:
-
-```bash
-VITE_SUPABASE_URL=https://seu-projeto.supabase.co
-VITE_SUPABASE_ANON_KEY=sua-anon-key-ou-publishable-key
-```
-
-## Avisos de Segurança
-
-- Nunca coloque `SUPABASE_SERVICE_ROLE_KEY` no frontend.
-- Nunca use prefixos públicos como `VITE_`, `NEXT_PUBLIC_` ou `PUBLIC_` em uma service role.
-- A service role deve existir apenas em Netlify Functions.
-- O frontend chama apenas rotas `/api/*`.
-- O `.env.example` não deve conter valores reais.
-- RLS deve permanecer habilitado no Supabase.
-- O painel está aberto apenas por ser um projeto pedagógico; em produção ele deve ter autenticação ou senha.
-
-## Endpoints da API
-
-### Consultar Disponibilidade
-
-```text
-POST /api/consultar-disponibilidade
-```
-
-Payload:
+### POST `/api/consultar-disponibilidade`
 
 ```json
 {
   "data": "2026-05-15",
-  "horario": "14:00"
+  "servico": "Hidratação",
+  "periodo": "tarde"
 }
 ```
 
-Resposta:
-
-```json
-{
-  "success": true,
-  "disponivel": true,
-  "message": "Horário disponível para agendamento.",
-  "data": "2026-05-15",
-  "horario": "14:00",
-  "conflito": null
-}
-```
-
-### Criar Agendamento
-
-```text
-POST /api/criar-agendamento
-```
-
-Payload:
+### POST `/api/criar-agendamento`
 
 ```json
 {
@@ -205,98 +81,92 @@ Payload:
   "whatsapp": "11988887777",
   "servico": "Hidratação",
   "data": "2026-05-15",
-  "horario": "15:00",
-  "observacoes": "Cliente prefere atendimento com profissional feminina"
+  "horario": "15:30",
+  "observacoes": "Cliente prefere atendimento no período da tarde",
+  "origem": "chat"
 }
 ```
 
-Resposta:
+Regras aplicadas no servidor:
 
-```json
-{
-  "success": true,
-  "message": "Agendamento registrado com sucesso",
-  "status": "pendente",
-  "data": {
-    "id": "uuid-do-agendamento",
-    "nome": "Juliana Alves",
-    "whatsapp": "11988887777",
-    "servico": "Hidratação",
-    "data": "2026-05-15",
-    "horario": "15:00",
-    "observacoes": "Cliente prefere atendimento com profissional feminina",
-    "status": "pendente"
-  }
-}
+- Não permite domingo nem segunda.
+- Não permite horários fora das janelas didáticas.
+- Não permite criar agendamento em horário já ocupado.
+- Valida nome, WhatsApp, serviço, data, horário e origem.
+- Status inicial: `pendente`.
+- Origens aceitas: `chat`, `manual`, `foundry`, `teste`.
+
+## Banco de Dados
+
+Execute `supabase/schema.sql` no SQL Editor do Supabase. A tabela principal é `public.agendamentos`, com RLS habilitado. A service role deve ser usada apenas nas Netlify Functions.
+
+## Variáveis de Ambiente
+
+```bash
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
+SUPABASE_PUBLISHABLE_KEY=sua-publishable-key
 ```
 
-## Como Conectar ao Microsoft Foundry
+Nunca exponha `SUPABASE_SERVICE_ROLE_KEY` no frontend. O arquivo `.env.example` deve conter apenas placeholders.
 
-1. Crie um agente no Microsoft Foundry.
-2. Configure o prompt para coletar nome, WhatsApp, serviço, data e horário.
-3. Adicione uma ferramenta usando o arquivo OpenAPI.
-4. Configure a ferramenta `consultarDisponibilidade`.
-5. Configure a ferramenta `criarAgendamento`.
-6. Oriente o agente a consultar disponibilidade antes de criar o agendamento.
-7. Teste uma conversa completa e confirme o registro no painel.
+## Rodar Localmente
 
-Endpoints públicos:
+```bash
+npm install
+npm run dev
+```
+
+Para validar build:
+
+```bash
+npm run build
+```
+
+Para testar Netlify Functions localmente:
+
+```bash
+npx netlify dev
+```
+
+## Microsoft Foundry
+
+Importe o arquivo `openapi.yaml` no Foundry. O agente deve:
+
+1. Conversar naturalmente.
+2. Coletar serviço, data e período.
+3. Chamar `consultarDisponibilidade`.
+4. Sugerir apenas horários retornados pela API.
+5. Coletar nome e WhatsApp.
+6. Chamar `criarAgendamento` somente após confirmação.
+7. Informar que o registro aparecerá no painel didático.
+
+## Prompt Recomendado
 
 ```text
-https://agente-agendamento.netlify.app/api/consultar-disponibilidade
-https://agente-agendamento.netlify.app/api/criar-agendamento
+Você é o agente do projeto SENAI Agenda IA.
+Converse naturalmente com o usuário.
+Colete serviço, data e período desejado.
+Consulte disponibilidade antes de confirmar qualquer agendamento.
+Sugira apenas horários retornados pela API.
+Depois que o usuário escolher um horário, colete nome e WhatsApp.
+Crie o agendamento somente após confirmação do usuário.
+Informe que o registro aparecerá no painel didático conectado ao Supabase.
+Não invente disponibilidade.
+Não confirme agendamento sem resposta da API.
+Não peça nem mencione chaves de API, service role ou variáveis secretas.
 ```
 
-## Como Usar o openapi.yaml
+## Segurança em Produção
 
-Arquivo local:
+- Proteger o painel com autenticação.
+- Usar RLS corretamente.
+- Não expor service role.
+- Validar payload no servidor.
+- Usar permissões por usuário.
+- Usar domínio privado ou rota protegida para painel.
 
-```text
-openapi.yaml
-```
-
-Arquivo publicado:
-
-```text
-https://agente-agendamento.netlify.app/openapi.yaml
-```
-
-O contrato usa:
-
-- `operationId: consultarDisponibilidade`
-- `operationId: criarAgendamento`
-- campos obrigatórios do agendamento: `nome`, `whatsapp`, `servico`, `data`, `horario`
-- campo opcional: `observacoes`
-
-## Como Professores e Alunos Podem Replicar
-
-1. Faça fork ou clone do repositório.
-2. Crie um novo projeto Supabase.
-3. Execute `supabase/schema.sql`.
-4. Crie um novo site no Netlify.
-5. Configure as variáveis de ambiente.
-6. Publique o projeto.
-7. Importe o `openapi.yaml` no Microsoft Foundry.
-8. Configure o prompt do agente.
-9. Teste consulta de disponibilidade.
-10. Teste criação de agendamento.
-11. Adapte o caso de uso para outra turma ou outro segmento.
-
-## Prompt Base do Agente
-
-```text
-Você é o assistente SENAI Agenda IA.
-Seu papel é coletar dados de agendamento de forma clara, educada e objetiva.
-Colete obrigatoriamente: nome, WhatsApp, serviço, data e horário.
-Antes de criar o agendamento, chame a ferramenta consultarDisponibilidade.
-Se o horário estiver disponível e o usuário confirmar, chame a ferramenta criarAgendamento.
-Não peça chaves de API ao usuário.
-Não mencione service role.
-Se algum dado estiver faltando, faça apenas a pergunta necessária.
-Ao concluir, informe que o agendamento ficou com status pendente.
-```
-
-## Assinatura
+## Créditos
 
 Projeto desenvolvido por Rafael Risso, com inspiração e orientação do Professor Alexandre Becas Hernandes.
 

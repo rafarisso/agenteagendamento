@@ -1,5 +1,20 @@
-import { createClient } from "@supabase/supabase-js";
 import type { Config } from "@netlify/functions";
+import {
+  AppointmentRow,
+  activeStatuses,
+  cleanString,
+  corsHeaders,
+  createSupabaseAdminClient,
+  displayServiceName,
+  isAllowedSlot,
+  isClosedDate,
+  isValidDate,
+  json,
+  normalizeMetadata,
+  normalizeOrigin,
+  normalizeService,
+  normalizeTime,
+} from "./_shared/schedule";
 
 type AppointmentPayload = {
   nome?: unknown;
@@ -11,54 +26,8 @@ type AppointmentPayload = {
   horario?: unknown;
   mensagem?: unknown;
   observacoes?: unknown;
+  origem?: unknown;
   metadata?: unknown;
-};
-
-type AppointmentInsert = {
-  id: string;
-  nome: string;
-  email: string | null;
-  telefone: string;
-  whatsapp: string;
-  servico: string;
-  data: string;
-  horario: string;
-  mensagem: string | null;
-  observacoes: string | null;
-  origem: string;
-  metadata: Record<string, unknown>;
-};
-
-const serviceAliases = new Map([
-  ["Corte masculino", "Corte masculino"],
-  ["corte masculino", "Corte masculino"],
-  ["Hidratação", "Hidratacao"],
-  ["Hidratacao", "Hidratacao"],
-  ["hidratacao", "Hidratacao"],
-  ["Escova", "Escova"],
-  ["escova", "Escova"],
-  ["Coloração", "Coloracao"],
-  ["Coloracao", "Coloracao"],
-  ["coloracao", "Coloracao"],
-  ["Diagnóstico Foundry", "Diagnostico Foundry"],
-  ["Diagnostico Foundry", "Diagnostico Foundry"],
-  ["diagnostico foundry", "Diagnostico Foundry"],
-  ["Automação com Agentes", "Automacao com Agentes"],
-  ["Automacao com Agentes", "Automacao com Agentes"],
-  ["automacao com agentes", "Automacao com Agentes"],
-  ["Integração Supabase", "Integracao Supabase"],
-  ["Integracao Supabase", "Integracao Supabase"],
-  ["integracao supabase", "Integracao Supabase"],
-  ["Mentoria técnica", "Mentoria tecnica"],
-  ["Mentoria tecnica", "Mentoria tecnica"],
-  ["mentoria tecnica", "Mentoria tecnica"],
-]);
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
 };
 
 export const config: Config = {};
@@ -72,15 +41,10 @@ export default async (request: Request) => {
     return json({ error: "Método não permitido." }, 405);
   }
 
-  const supabaseUrl = readEnv("SUPABASE_URL");
-  const supabaseKey =
-    readEnv("SUPABASE_SERVICE_ROLE_KEY") ??
-    readEnv("SUPABASE_PUBLISHABLE_KEY") ??
-    readEnv("SUPABASE_ANON_KEY");
-
-  if (!supabaseUrl || !supabaseKey) {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
     return json(
-      { error: "Configure SUPABASE_URL e uma chave Supabase server-side na Netlify." },
+      { error: "Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Netlify." },
       500,
     );
   }
@@ -97,12 +61,22 @@ export default async (request: Request) => {
     return json({ error: parsed.error }, 400);
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  const { data: conflitos, error: conflictError } = await supabase
+    .from("agendamentos")
+    .select("id,status")
+    .eq("data", parsed.value.data)
+    .eq("horario", parsed.value.horario)
+    .in("status", activeStatuses)
+    .limit(1);
+
+  if (conflictError) {
+    console.error("Erro ao validar conflito de agenda no Supabase", conflictError);
+    return json({ error: "Não foi possível validar a disponibilidade." }, 502);
+  }
+
+  if ((conflitos ?? []).length > 0) {
+    return json({ error: "Este horário já está reservado." }, 409);
+  }
 
   const { error } = await supabase.from("agendamentos").insert(parsed.value);
 
@@ -130,34 +104,25 @@ export default async (request: Request) => {
         horario: parsed.value.horario,
         observacoes: parsed.value.observacoes,
         status: "pendente",
+        origem: parsed.value.origem,
       },
     },
     201,
   );
 };
 
-function readEnv(name: string) {
-  return globalThis.Netlify?.env?.get(name) ?? process.env[name];
-}
-
-function json(payload: unknown, status: number) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: corsHeaders,
-  });
-}
-
 function parsePayload(payload: AppointmentPayload):
-  | { ok: true; value: AppointmentInsert }
+  | { ok: true; value: AppointmentRow }
   | { ok: false; error: string } {
   const id = crypto.randomUUID();
   const nome = cleanString(payload.nome);
   const email = cleanString(payload.email);
   const whatsapp = cleanString(payload.whatsapp) || cleanString(payload.telefone);
-  const servico = cleanString(payload.servico);
+  const servico = normalizeService(cleanString(payload.servico));
   const data = cleanString(payload.data);
-  const horario = cleanString(payload.horario);
+  const horario = normalizeTime(cleanString(payload.horario));
   const observacoes = cleanString(payload.observacoes) || cleanString(payload.mensagem);
+  const origem = normalizeOrigin(cleanString(payload.origem) || "chat");
 
   if (!nome || nome.length < 3) {
     return { ok: false, error: "Informe um nome com pelo menos 3 caracteres." };
@@ -167,22 +132,28 @@ function parsePayload(payload: AppointmentPayload):
     return { ok: false, error: "Informe um email válido." };
   }
 
-  if (!whatsapp || whatsapp.length < 8) {
+  if (!whatsapp || whatsapp.replace(/\D/g, "").length < 8) {
     return { ok: false, error: "Informe um WhatsApp válido." };
   }
 
-  const normalizedService = serviceAliases.get(servico) ?? serviceAliases.get(normalizeLookupKey(servico));
-
-  if (!normalizedService) {
+  if (!servico) {
     return { ok: false, error: "Escolha um serviço válido." };
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || Number.isNaN(Date.parse(`${data}T00:00:00`))) {
+  if (!isValidDate(data)) {
     return { ok: false, error: "Informe uma data válida no formato AAAA-MM-DD." };
   }
 
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(horario)) {
-    return { ok: false, error: "Informe um horário válido no formato HH:MM." };
+  if (isClosedDate(data)) {
+    return { ok: false, error: "Não há atendimento aos domingos e segundas-feiras." };
+  }
+
+  if (!horario || !isAllowedSlot(horario)) {
+    return { ok: false, error: "Informe um horário disponível na agenda didática." };
+  }
+
+  if (!origem) {
+    return { ok: false, error: "Informe uma origem válida: chat, manual, foundry ou teste." };
   }
 
   return {
@@ -193,45 +164,14 @@ function parsePayload(payload: AppointmentPayload):
       email: email || null,
       telefone: whatsapp,
       whatsapp,
-      servico: normalizedService,
+      servico,
       data,
       horario,
       mensagem: observacoes || null,
       observacoes: observacoes || null,
-      origem: "site",
+      status: "pendente",
+      origem,
       metadata: normalizeMetadata(payload.metadata),
     },
   };
-}
-
-function cleanString(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeLookupKey(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function displayServiceName(value: string) {
-  const displayNames = new Map([
-    ["Hidratacao", "Hidratação"],
-    ["Coloracao", "Coloração"],
-    ["Diagnostico Foundry", "Diagnóstico Foundry"],
-    ["Automacao com Agentes", "Automação com Agentes"],
-    ["Integracao Supabase", "Integração Supabase"],
-    ["Mentoria tecnica", "Mentoria técnica"],
-  ]);
-
-  return displayNames.get(value) ?? value;
-}
-
-function normalizeMetadata(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  return value as Record<string, unknown>;
 }

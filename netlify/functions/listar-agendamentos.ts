@@ -1,12 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
 import type { Config } from "@netlify/functions";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Content-Type": "application/json",
-};
+import {
+  AppointmentStatus,
+  cleanString,
+  corsHeaders,
+  createSupabaseAdminClient,
+  displayServiceName,
+  json,
+  normalizeOrigin,
+} from "./_shared/schedule";
 
 export const config: Config = {};
 
@@ -19,10 +20,8 @@ export default async (request: Request) => {
     return json({ error: "Método não permitido." }, 405);
   }
 
-  const supabaseUrl = readEnv("SUPABASE_URL");
-  const serviceRoleKey = readEnv("SUPABASE_SERVICE_ROLE_KEY");
-
-  if (!supabaseUrl || !serviceRoleKey) {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
     return json(
       {
         error:
@@ -32,64 +31,39 @@ export default async (request: Request) => {
     );
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-
   const { data, error } = await supabase
     .from("agendamentos")
-    .select("id,nome,whatsapp,telefone,servico,data,horario,observacoes,mensagem,status,created_at,updated_at")
+    .select("id,nome,whatsapp,telefone,servico,data,horario,observacoes,mensagem,status,origem,created_at,updated_at")
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(50);
 
   if (error) {
     console.error("Erro ao listar agendamentos no Supabase", error);
     return json({ error: "Não foi possível carregar os agendamentos." }, 502);
   }
 
-  return json(
-    {
-      success: true,
-      data: (data ?? []).map((item) => ({
-        id: String(item.id),
-        nome: String(item.nome),
-        whatsapp: String(item.whatsapp ?? item.telefone ?? ""),
-        servico: displayServiceName(String(item.servico)),
-        data: String(item.data),
-        horario: String(item.horario).slice(0, 5),
-        observacoes: (item.observacoes ?? item.mensagem ?? null) as string | null,
-        status: item.status as string,
-        created_at: item.created_at as string | undefined,
-        updated_at: item.updated_at as string | undefined,
-      })),
-    },
-    200,
-  );
+  return json({
+    success: true,
+    data: (data ?? []).map((item) => ({
+      id: String(item.id),
+      nome: String(item.nome),
+      whatsapp: String(item.whatsapp ?? item.telefone ?? ""),
+      servico: displayServiceName(String(item.servico)),
+      data: String(item.data),
+      horario: String(item.horario).slice(0, 5),
+      observacoes: (item.observacoes ?? item.mensagem ?? null) as string | null,
+      status: normalizeStatus(cleanString(item.status)) ?? "pendente",
+      origem: normalizeOrigin(cleanString(item.origem)) ?? "manual",
+      created_at: item.created_at as string | undefined,
+      updated_at: item.updated_at as string | undefined,
+    })),
+  });
 };
 
-function readEnv(name: string) {
-  return globalThis.Netlify?.env?.get(name) ?? process.env[name];
-}
+function normalizeStatus(value: string): AppointmentStatus | null {
+  if (value === "pendente" || value === "confirmado" || value === "cancelado") {
+    return value;
+  }
 
-function json(payload: unknown, status: number) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: corsHeaders,
-  });
-}
-
-function displayServiceName(value: string) {
-  const displayNames = new Map([
-    ["Hidratacao", "Hidratação"],
-    ["Coloracao", "Coloração"],
-    ["Diagnostico Foundry", "Diagnóstico Foundry"],
-    ["Automacao com Agentes", "Automação com Agentes"],
-    ["Integracao Supabase", "Integração Supabase"],
-    ["Mentoria tecnica", "Mentoria técnica"],
-  ]);
-
-  return displayNames.get(value) ?? value;
+  return null;
 }

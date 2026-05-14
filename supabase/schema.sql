@@ -2,34 +2,20 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.agendamentos (
   id uuid primary key default gen_random_uuid(),
-  nome text not null check (char_length(trim(nome)) >= 3),
+  nome text not null,
   email text,
   telefone text,
-  whatsapp text,
-  servico text not null check (
-    servico in (
-      'Corte masculino',
-      'Hidratacao',
-      'Escova',
-      'Coloracao',
-      'Diagnostico Foundry',
-      'Automacao com Agentes',
-      'Integracao Supabase',
-      'Mentoria tecnica'
-    )
-  ),
+  whatsapp text not null,
+  servico text not null,
   data date not null,
   horario time without time zone not null,
   mensagem text,
   observacoes text,
-  status text not null default 'pendente' check (
-    status in ('pendente', 'confirmado', 'cancelado', 'concluido')
-  ),
-  origem text not null default 'site',
+  status text not null default 'pendente',
+  origem text not null default 'chat',
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  check (char_length(trim(coalesce(whatsapp, telefone, ''))) >= 8)
+  updated_at timestamptz not null default now()
 );
 
 alter table public.agendamentos
@@ -38,25 +24,102 @@ alter table public.agendamentos
   add column if not exists whatsapp text,
   add column if not exists mensagem text,
   add column if not exists observacoes text,
-  add column if not exists origem text not null default 'site',
+  add column if not exists origem text not null default 'chat',
   add column if not exists metadata jsonb not null default '{}'::jsonb,
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
 
-alter table public.agendamentos
-  alter column email drop not null;
-
 update public.agendamentos
 set
   whatsapp = coalesce(whatsapp, telefone),
-  observacoes = coalesce(observacoes, mensagem)
-where whatsapp is null or observacoes is null;
+  observacoes = coalesce(observacoes, mensagem),
+  origem = case
+    when origem = 'site' then 'manual'
+    when origem in ('chat', 'manual', 'foundry', 'teste') then origem
+    else 'manual'
+  end,
+  status = case
+    when status in ('pendente', 'confirmado', 'cancelado') then status
+    else 'cancelado'
+  end
+where whatsapp is null
+  or observacoes is null
+  or origem not in ('chat', 'manual', 'foundry', 'teste')
+  or status not in ('pendente', 'confirmado', 'cancelado');
 
-create index if not exists agendamentos_data_horario_idx
-  on public.agendamentos (data, horario);
+alter table public.agendamentos
+  alter column whatsapp set not null,
+  alter column origem set default 'chat',
+  alter column status set default 'pendente';
+
+do $$
+declare
+  constraint_name text;
+begin
+  for constraint_name in
+    select conname
+    from pg_constraint
+    where conrelid = 'public.agendamentos'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) like '%status%'
+  loop
+    execute format('alter table public.agendamentos drop constraint if exists %I', constraint_name);
+  end loop;
+end $$;
+
+do $$
+declare
+  constraint_name text;
+begin
+  for constraint_name in
+    select conname
+    from pg_constraint
+    where conrelid = 'public.agendamentos'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) like '%origem%'
+  loop
+    execute format('alter table public.agendamentos drop constraint if exists %I', constraint_name);
+  end loop;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'agendamentos_status_check'
+  ) then
+    alter table public.agendamentos
+      add constraint agendamentos_status_check
+      check (status in ('pendente', 'confirmado', 'cancelado'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'agendamentos_origem_check'
+  ) then
+    alter table public.agendamentos
+      add constraint agendamentos_origem_check
+      check (origem in ('chat', 'manual', 'foundry', 'teste'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'agendamentos_whatsapp_check'
+  ) then
+    alter table public.agendamentos
+      add constraint agendamentos_whatsapp_check
+      check (char_length(trim(whatsapp)) >= 8);
+  end if;
+end $$;
+
+create index if not exists agendamentos_data_idx
+  on public.agendamentos (data);
+
+create index if not exists agendamentos_horario_idx
+  on public.agendamentos (horario);
 
 create index if not exists agendamentos_status_idx
   on public.agendamentos (status);
+
+create index if not exists agendamentos_origem_idx
+  on public.agendamentos (origem);
 
 create unique index if not exists agendamentos_slot_ativo_unique
   on public.agendamentos (data, horario)
@@ -82,35 +145,10 @@ execute function public.set_updated_at();
 alter table public.agendamentos enable row level security;
 
 revoke all on public.agendamentos from anon, authenticated;
-grant usage on schema public to service_role, anon;
+grant usage on schema public to service_role;
 grant select, insert, update, delete on public.agendamentos to service_role;
-grant insert (
-  id,
-  nome,
-  email,
-  telefone,
-  whatsapp,
-  servico,
-  data,
-  horario,
-  mensagem,
-  observacoes,
-  origem,
-  metadata
-) on public.agendamentos to anon;
 
 drop policy if exists agendamentos_insert_anon on public.agendamentos;
-
-create policy agendamentos_insert_anon
-  on public.agendamentos
-  for insert
-  to anon
-  with check (
-    status = 'pendente'
-    and origem = 'site'
-    and jsonb_typeof(metadata) = 'object'
-    and char_length(trim(coalesce(whatsapp, telefone, ''))) >= 8
-  );
 
 comment on table public.agendamentos is
   'Agendamentos do projeto SENAI Agenda IA recebidos por Netlify Functions e usados como case didático do curso MS FOUNDRY 2602.';

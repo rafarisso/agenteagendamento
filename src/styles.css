@@ -326,6 +326,56 @@ main {
   overflow: hidden;
 }
 
+.focused-hero {
+  min-height: auto;
+  padding-top: 70px;
+}
+
+.demo-console {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(3, 9, 18, 0.64);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.console-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  color: #dceafe;
+  font-weight: 900;
+}
+
+.mini-chat {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.bubble {
+  width: fit-content;
+  max-width: 88%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: #e7eef8;
+  line-height: 1.55;
+}
+
+.bubble.user {
+  justify-self: end;
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.bubble.agent {
+  justify-self: start;
+  background: rgba(34, 211, 238, 0.1);
+}
+
 .panel-toolbar {
   display: flex;
   gap: 8px;
@@ -442,6 +492,40 @@ main {
   gap: 14px;
 }
 
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.info-card {
+  min-height: 190px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(12, 30, 52, 0.72);
+}
+
+.info-card svg {
+  color: var(--cyan);
+}
+
+.info-card h3 {
+  margin: 16px 0 8px;
+  color: #ffffff;
+  font-size: 1.02rem;
+}
+
+.info-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.compact-section {
+  padding-top: 12px;
+}
+
 .step-card,
 .metric-card,
 .doc-section,
@@ -494,6 +578,10 @@ main {
   grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
   gap: 24px;
   padding: 46px 0;
+}
+
+.chat-page-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
 }
 
 .form-surface,
@@ -728,6 +816,28 @@ textarea::placeholder {
   margin-top: 18px;
 }
 
+.learning-panel {
+  align-self: start;
+}
+
+.didactic-note {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(3, 9, 18, 0.42);
+}
+
+.didactic-note strong {
+  color: #ffffff;
+}
+
+.didactic-note p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
 .slot-list {
   display: grid;
   gap: 12px;
@@ -801,6 +911,10 @@ textarea::placeholder {
   margin-bottom: 18px;
 }
 
+.panel-metrics {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .metric-card {
   padding: 18px;
 }
@@ -840,6 +954,10 @@ textarea::placeholder {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.appointment-row.detailed {
+  grid-template-columns: minmax(160px, 1.1fr) minmax(170px, 1.1fr) auto auto minmax(120px, 0.7fr);
+}
+
 .appointment-row div {
   display: grid;
   gap: 4px;
@@ -865,6 +983,47 @@ textarea::placeholder {
 
 .status-badge.cancelado {
   color: #fecdd3;
+}
+
+.origin-badge {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #dceafe;
+  font-size: 0.84rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.origin-badge.chat {
+  border-color: rgba(34, 211, 238, 0.34);
+  color: #a5f3fc;
+}
+
+.origin-badge.foundry {
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #bfdbfe;
+}
+
+.origin-badge.manual,
+.origin-badge.teste {
+  color: #cbd5e1;
+}
+
+.empty-state {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  padding: 20px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--muted);
 }
 
 .page-intro {
@@ -925,6 +1084,11 @@ textarea::placeholder {
 .flow-node svg {
   flex: 0 0 auto;
   color: var(--cyan);
+}
+
+.flow-arrow {
+  color: var(--cyan);
+  font-size: 1.2rem;
 }
 
 .numbered-list {
@@ -1014,6 +1178,10 @@ textarea::placeholder {
   color: #dceafe;
 }
 
+.footer-short {
+  display: none;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1049,7 +1217,9 @@ textarea::placeholder {
   }
 
   .steps-grid,
+  .feature-grid,
   .metric-grid,
+  .panel-metrics,
   .flow-list,
   .field-grid,
   .service-picker {
@@ -1058,6 +1228,7 @@ textarea::placeholder {
 
   .section-heading,
   .appointment-row,
+  .appointment-row.detailed,
   .key-list div {
     align-items: flex-start;
     grid-template-columns: 1fr;
@@ -1126,6 +1297,14 @@ textarea::placeholder {
 
   .site-footer p {
     display: none;
+  }
+
+  .footer-full {
+    display: none;
+  }
+
+  .footer-short {
+    display: block;
   }
 
   .site-footer strong {

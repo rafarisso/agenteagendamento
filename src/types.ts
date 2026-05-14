@@ -1,3 +1,6 @@
+export type AppointmentOrigin = "chat" | "manual" | "foundry" | "teste";
+export type AppointmentStatus = "pendente" | "confirmado" | "cancelado";
+
 export type AppointmentForm = {
   nome: string;
   whatsapp: string;
@@ -6,12 +9,13 @@ export type AppointmentForm = {
   horario: string;
   observacoes: string;
   email?: string;
+  origem?: AppointmentOrigin;
 };
 
 export type AppointmentResponse = {
   id: string;
   success?: boolean;
-  status: "pendente" | "confirmado" | "cancelado" | "concluido";
+  status: AppointmentStatus;
   message: string;
   data?: AppointmentRecord;
 };
@@ -24,19 +28,31 @@ export type AppointmentRecord = {
   data: string;
   horario: string;
   observacoes: string | null;
-  status: "pendente" | "confirmado" | "cancelado" | "concluido";
+  status: AppointmentStatus;
+  origem: AppointmentOrigin;
   created_at?: string;
   updated_at?: string;
 };
 
+export type DaySlot = {
+  horario: string;
+  periodo: "manha" | "tarde";
+  disponivel: boolean;
+};
+
+export type DayAvailabilityResponse = {
+  success: boolean;
+  data: string;
+  slots: DaySlot[];
+  mensagem: string;
+};
+
 export type AvailabilityResponse = {
   success: boolean;
-  disponivel: boolean;
-  message: string;
   data: string;
-  horario: string;
-  conflito?: {
-    status: string;
-    servico?: string;
-  } | null;
+  servico: string | null;
+  periodo: string;
+  horariosDisponiveis: string[];
+  mensagem: string;
+  disponivel?: boolean;
 };
