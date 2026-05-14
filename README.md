@@ -411,7 +411,7 @@ Em um projeto real:
 
 ## Referências
 
-- Documentação Microsoft sobre ferramentas OpenAPI em agentes do Foundry: https://learn.microsoft.com/en-us/azure/ai-services/agents/how-to/tools/openapi-spec
+- Documentação Microsoft sobre ferramentas OpenAPI em agentes do Foundry: https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/tools/openapi
 - Documentação Supabase sobre segurança de APIs e RLS: https://supabase.com/docs/guides/api/securing-your-api
 - Documentação Netlify Functions: https://docs.netlify.com/build/functions/overview/
 
