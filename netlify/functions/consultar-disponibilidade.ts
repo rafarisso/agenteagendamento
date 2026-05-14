@@ -110,7 +110,7 @@ export default async (request: Request) => {
     horariosDisponiveis,
     mensagem:
       horariosDisponiveis.length > 0
-        ? `Encontrei ${horariosDisponiveis.length} horário${horariosDisponiveis.length === 1 ? "" : "s"} disponível${horariosDisponiveis.length === 1 ? "" : "is"} para esse período.`
+        ? `Encontrei ${horariosDisponiveis.length} horário${horariosDisponiveis.length === 1 ? "" : "s"} ${horariosDisponiveis.length === 1 ? "disponível" : "disponíveis"} para esse período.`
         : "Não encontrei horários disponíveis para esse período.",
     disponivel,
   });
