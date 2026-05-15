@@ -168,10 +168,10 @@ function parseJsonResponse<T>(responseText: string, responseOk: boolean): T {
 
     throw new Error(
       responseOk
-        ? "O agente respondeu em um formato inesperado. Tente enviar a mensagem novamente."
+        ? "O agente respondeu em um formato inesperado. Se você estava finalizando um agendamento, confira o Painel Didático antes de tentar novamente."
         : `A integração com o agente retornou uma resposta fora do formato esperado.${
             preview ? ` Prévia: ${preview}` : ""
-          }`,
+          } Se você estava finalizando um agendamento, confira o Painel Didático antes de tentar novamente.`,
     );
   }
 }

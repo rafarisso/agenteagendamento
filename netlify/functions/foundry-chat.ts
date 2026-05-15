@@ -67,27 +67,38 @@ export default async (request: Request) => {
   try {
     const endpoint = getResponsesEndpoint();
     const headers = await getFoundryAuthHeaders();
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        ...headers,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 50_000);
+    let response: Response;
 
-    const responsePayload = await response.json().catch(() => ({}));
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const responseText = await response.text();
+    const responsePayload = parseJsonPayload(responseText);
 
     if (!response.ok) {
       console.error("Erro ao chamar agente Foundry", {
         status: response.status,
         payload: sanitizeFoundryError(responsePayload),
+        bodyPreview: responsePayload ? undefined : responseText.slice(0, 240),
       });
 
       return json(
         {
           error:
-            "Não foi possível conversar com o agente do Microsoft Foundry. Verifique as variáveis de ambiente e a autenticação da Function.",
+            "O agente do Microsoft Foundry retornou erro antes de concluir a resposta. Se você estava registrando um agendamento, confira o Painel Didático antes de tentar novamente.",
           status: response.status,
           details: sanitizeFoundryError(responsePayload),
         },
@@ -95,17 +106,28 @@ export default async (request: Request) => {
       );
     }
 
+    const responseRecord = isRecord(responsePayload) ? responsePayload : {};
     const reply = extractOutputText(responsePayload);
     return json({
       success: true,
       reply,
-      responseId: readString(responsePayload, "id"),
+      responseId: readString(responseRecord, "id"),
       conversationId: extractConversationId(responsePayload) || conversationId || null,
       outputTypes: extractOutputTypes(responsePayload),
       toolCalls: extractToolCalls(responsePayload),
     });
   } catch (error) {
     console.error("Falha inesperada na integração com Foundry", error);
+    if (isAbortError(error)) {
+      return json(
+        {
+          error:
+            "A resposta do Microsoft Foundry demorou mais que o esperado. Se você estava registrando um agendamento, confira o Painel Didático antes de tentar novamente.",
+        },
+        504,
+      );
+    }
+
     return json(
       {
         error:
@@ -117,6 +139,18 @@ export default async (request: Request) => {
     );
   }
 };
+
+function parseJsonPayload(text: string) {
+  try {
+    return text ? (JSON.parse(text) as unknown) : {};
+  } catch {
+    return null;
+  }
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
 
 function getResponsesEndpoint() {
   const configured = cleanString(readEnv("AZURE_FOUNDRY_RESPONSES_ENDPOINT"));
