@@ -154,6 +154,7 @@ components:
           example: "2026-05-15"
         servico:
           type: string
+          description: "Serviço aceito pela API. Exemplos: Corte masculino, Hidratação, Escova, Depilação, Coloração."
           example: Hidratação
         periodo:
           type: string
@@ -177,6 +178,7 @@ components:
           example: "2026-05-15"
         servico:
           type: string
+          description: "Serviço normalizado retornado pela API."
           example: Hidratação
         periodo:
           type: string
@@ -212,6 +214,7 @@ components:
           example: "11988887777"
         servico:
           type: string
+          description: "Serviço aceito pela API. Exemplos: Corte masculino, Hidratação, Escova, Depilação, Coloração."
           example: Hidratação
         data:
           type: string

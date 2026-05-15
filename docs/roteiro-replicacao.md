@@ -19,6 +19,7 @@ Este roteiro resume a sequência recomendada para reproduzir o SENAI Agenda IA e
 1. Criar um novo projeto no Supabase.
 2. Abrir o SQL Editor.
 3. Executar o conteúdo de `supabase/schema.sql`.
+   - Se o projeto já existia antes da inclusão de novos serviços, execute novamente o schema ou rode `supabase/patch-remover-constraint-servico.sql` para remover constraints antigas de `servico`.
 4. Abrir **Settings > API Keys**.
 5. Copiar:
    - Project URL
@@ -105,6 +106,8 @@ Resultado esperado:
 9. O agente confirma os dados.
 10. O agente chama `criarAgendamento`.
 11. O Painel Didático exibe o registro.
+
+Também é possível testar variações de linguagem, como `depilação genital`, `depilação íntima` ou `depilar`, que devem ser normalizadas para o serviço demonstrativo `Depilação`.
 
 ## 7. Onde Verificar Erros
 

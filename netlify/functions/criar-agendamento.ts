@@ -86,6 +86,15 @@ export default async (request: Request) => {
       return json({ error: "Este horário já está reservado." }, 409);
     }
 
+    if (error.code === "23514") {
+      return json({
+        success: false,
+        status: "erro_schema",
+        message:
+          "O banco de dados ainda não aceita este serviço. Execute a atualização do schema SQL no Supabase e tente novamente.",
+      });
+    }
+
     return json({ error: "Não foi possível salvar o agendamento." }, 502);
   }
 

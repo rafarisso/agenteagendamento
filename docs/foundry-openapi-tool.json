@@ -31,7 +31,7 @@
                   },
                   "servico": {
                     "type": "string",
-                    "description": "Servico desejado. Exemplos: Corte masculino, Hidratacao, Escova, Coloracao."
+                    "description": "Servico desejado. Exemplos: Corte masculino, Hidratacao, Escova, Depilacao, Coloracao."
                   },
                   "periodo": {
                     "type": "string",

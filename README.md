@@ -139,6 +139,7 @@ Resposta esperada:
 
 ## Regras de Negócio
 
+- Serviços demonstrativos aceitos: `Corte masculino`, `Hidratação`, `Escova`, `Depilação`, `Coloração`, `Diagnóstico Foundry`, `Automação com Agentes`, `Integração Supabase` e `Mentoria técnica`.
 - Não há atendimento aos domingos.
 - Não há atendimento às segundas-feiras.
 - Horários de manhã: `09:00` e `10:30`.
@@ -152,6 +153,7 @@ Resposta esperada:
 ## Banco de Dados Supabase
 
 Execute o arquivo [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor do Supabase.
+Se o projeto já tinha sido criado antes da inclusão de novos serviços demonstrativos, execute o schema novamente ou rode o patch incremental [`supabase/patch-remover-constraint-servico.sql`](supabase/patch-remover-constraint-servico.sql) para remover constraints antigas de `servico`.
 
 A tabela principal é `public.agendamentos`.
 

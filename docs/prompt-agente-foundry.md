@@ -94,6 +94,7 @@ Use sempre um destes nomes oficiais ao chamar a API:
 - Corte masculino
 - Hidratação
 - Escova
+- Depilação
 - Coloração
 - Diagnóstico Foundry
 - Automação com Agentes
@@ -134,6 +135,18 @@ Se o usuário disser:
 
 Interprete como:
 "Escova"
+
+Se o usuário disser:
+- "depilar"
+- "depilação"
+- "depilação genital"
+- "depilação genitária"
+- "depilação íntima"
+- "depilação feminina"
+- "depilação masculina"
+
+Interprete como:
+"Depilação"
 
 REGRAS DE DATA
 

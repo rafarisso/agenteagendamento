@@ -131,6 +131,7 @@ Serviços oficiais:
 - Corte masculino
 - Hidratação
 - Escova
+- Depilação
 - Coloração
 - Diagnóstico Foundry
 - Automação com Agentes
@@ -139,6 +140,7 @@ Serviços oficiais:
 
 Sinônimos:
 "corte", "cortar cabelo" ou "cabelo" = "Corte masculino".
+"depilar", "depilação", "depilação genital" ou "depilação íntima" = "Depilação".
 "hidratar" ou "tratamento" = "Hidratação".
 "pintar", "tintura" ou "colorir" = "Coloração".
 
@@ -159,6 +161,7 @@ const services = [
   "Corte masculino",
   "Hidratação",
   "Escova",
+  "Depilação",
   "Coloração",
   "Diagnóstico Foundry",
   "Automação com Agentes",
@@ -181,22 +184,34 @@ const chatServiceAliases = [
   },
   {
     service: services[3],
-    aliases: ["coloracao", "colorir", "pintar", "tintura", "pintura"],
+    aliases: [
+      "depilacao",
+      "depilar",
+      "depilacao genital",
+      "depilacao genitaria",
+      "depilacao intima",
+      "genital",
+      "genitaria",
+    ],
   },
   {
     service: services[4],
-    aliases: ["diagnostico", "foundry", "diagnostico foundry"],
+    aliases: ["coloracao", "colorir", "pintar", "tintura", "pintura"],
   },
   {
     service: services[5],
-    aliases: ["automacao", "agentes", "automacao com agentes"],
+    aliases: ["diagnostico", "foundry", "diagnostico foundry"],
   },
   {
     service: services[6],
-    aliases: ["integracao", "supabase", "integracao supabase"],
+    aliases: ["automacao", "agentes", "automacao com agentes"],
   },
   {
     service: services[7],
+    aliases: ["integracao", "supabase", "integracao supabase"],
+  },
+  {
+    service: services[8],
     aliases: ["mentoria", "mentoria tecnica"],
   },
 ];

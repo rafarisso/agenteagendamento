@@ -36,6 +36,15 @@ export const serviceAliases = new Map([
   ["cortar o cabelo", "Corte masculino"],
   ["corte de cabelo", "Corte masculino"],
   ["corte masculino", "Corte masculino"],
+  ["depilacao", "Depilacao"],
+  ["depilar", "Depilacao"],
+  ["depilacao genital", "Depilacao"],
+  ["depilacao genitaria", "Depilacao"],
+  ["depilacao intima", "Depilacao"],
+  ["depilacao feminina", "Depilacao"],
+  ["depilacao masculina", "Depilacao"],
+  ["genital", "Depilacao"],
+  ["genitaria", "Depilacao"],
   ["hidratacao", "Hidratacao"],
   ["hidratar", "Hidratacao"],
   ["tratamento", "Hidratacao"],
@@ -72,6 +81,7 @@ export const displayNames = new Map([
   ["Automacao com Agentes", "Automação com Agentes"],
   ["Integracao Supabase", "Integração Supabase"],
   ["Mentoria tecnica", "Mentoria técnica"],
+  ["Depilacao", "Depilação"],
 ]);
 
 export const corsHeaders = {
