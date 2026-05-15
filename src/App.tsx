@@ -442,12 +442,27 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
   const [lastToolCalls, setLastToolCalls] = useState<string[]>([]);
   const [isWorking, setIsWorking] = useState(false);
   const chatWindowRef = useRef<HTMLDivElement | null>(null);
+  const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const chatWindow = chatWindowRef.current;
-    if (chatWindow) {
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
+    const scrollToBottom = () => {
+      const chatWindow = chatWindowRef.current;
+      if (chatWindow) {
+        chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: "smooth" });
+      }
+      chatBottomRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    };
+
+    const firstFrame = window.requestAnimationFrame(() => {
+      scrollToBottom();
+      window.requestAnimationFrame(scrollToBottom);
+    });
+    const timeout = window.setTimeout(scrollToBottom, 120);
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.clearTimeout(timeout);
+    };
   }, [messages, isWorking]);
 
   async function handleChatSubmit(event: FormEvent<HTMLFormElement>) {
@@ -511,6 +526,7 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
               Conversando com o agente Foundry...
             </div>
           ) : null}
+          <div className="chat-bottom-marker" ref={chatBottomRef} aria-hidden="true" />
         </div>
 
         <form className="chat-form" onSubmit={handleChatSubmit}>
