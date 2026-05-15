@@ -132,7 +132,11 @@ export async function sendFoundryChat(
     }),
   });
 
-  const payload = (await response.json()) as Partial<FoundryChatResponse> & { error?: string };
+  const responseText = await response.text();
+  const payload = parseJsonResponse<Partial<FoundryChatResponse> & { error?: string }>(
+    responseText,
+    response.ok,
+  );
 
   if (!response.ok) {
     throw new Error(payload.error ?? "Não foi possível conversar com o agente Foundry.");
@@ -150,4 +154,24 @@ export async function sendFoundryChat(
     outputTypes: payload.outputTypes ?? [],
     toolCalls: payload.toolCalls ?? [],
   };
+}
+
+function parseJsonResponse<T>(responseText: string, responseOk: boolean): T {
+  try {
+    return responseText ? (JSON.parse(responseText) as T) : ({} as T);
+  } catch {
+    const preview = responseText
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 160);
+
+    throw new Error(
+      responseOk
+        ? "O agente respondeu em um formato inesperado. Tente enviar a mensagem novamente."
+        : `A integração com o agente retornou uma resposta fora do formato esperado.${
+            preview ? ` Prévia: ${preview}` : ""
+          }`,
+    );
+  }
 }

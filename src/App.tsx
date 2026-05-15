@@ -21,7 +21,7 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, ReactNode } from "react";
 import {
   createAppointment,
@@ -441,6 +441,14 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
   const [lastOutputTypes, setLastOutputTypes] = useState<string[]>([]);
   const [lastToolCalls, setLastToolCalls] = useState<string[]>([]);
   const [isWorking, setIsWorking] = useState(false);
+  const chatWindowRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const chatWindow = chatWindowRef.current;
+    if (chatWindow) {
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+  }, [messages, isWorking]);
 
   async function handleChatSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -491,7 +499,7 @@ function ChatPage({ navigate }: { navigate: (path: string) => void }) {
           <MessageSquareText size={30} />
         </div>
 
-        <div className="chat-window" aria-live="polite">
+        <div className="chat-window" aria-live="polite" ref={chatWindowRef}>
           {messages.map((message, index) => (
             <div className={`chat-message ${message.role}`} key={`${message.role}-${index}`}>
               {message.text}
